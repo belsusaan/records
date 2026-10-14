@@ -137,17 +137,17 @@ export default function GiftEnvelope({ isOpen, onOpen, onReSeal }) {
               <motion.div
                 animate={{ opacity: [0.7, 1, 0.7] }}
                 transition={{ repeat: Infinity, duration: 2.2 }}
-                className="mt-8 text-center"
+                className="mt-6 text-center"
               >
-                <p className="text-xs sm:text-sm font-handwriting text-[#edd19c] text-lg tracking-wider">
+                <p className="font-butterfly text-2xl sm:text-3xl text-[#edd19c] tracking-wide">
                   ✦ Toca el sello de cera para romper el lacre y reproducir ✦
                 </p>
               </motion.div>
             </div>
 
-            {/* Album Footer Note */}
-            <div className="relative text-center pb-1">
-              <p className="text-[11px] text-[#7d6f6c] tracking-widest uppercase">
+            {/* Album Footer Note with discreet Spotify action */}
+            <div className="relative text-center pb-1 flex flex-col items-center gap-1">
+              <p className="font-butterfly text-xl text-[#b09e99]">
                 Hecho a mano con amor • Lado A & Lado B
               </p>
             </div>

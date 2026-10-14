@@ -9,9 +9,9 @@ const SPOTIFY_REFRESH_KEY = 'spotify_refresh_token';
 const SPOTIFY_EXPIRES_KEY = 'spotify_token_expires_at';
 const SPOTIFY_VERIFIER_KEY = 'spotify_code_verifier';
 
-// Default Demo / Fallback config
-export const DEFAULT_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
-export const DEFAULT_PLAYLIST_ID = import.meta.env.VITE_SPOTIFY_PLAYLIST_ID || '37i9dQZF1DXcBWIGoYBM5M'; // Today's Top Hits / Lo-fi default
+// Configured Spotify Client ID provided by user
+export const DEFAULT_CLIENT_ID = 'ce48e7726f0f420faf794d16da8bcbf9';
+export const DEFAULT_PLAYLIST_ID = '37i9dQZF1DXcBWIGoYBM5M'; // Fallback playlist
 
 export function getStoredConfig() {
   return {
@@ -80,6 +80,7 @@ export async function initiateSpotifyAuth(clientId) {
     'user-read-currently-playing',
     'playlist-read-private',
     'playlist-read-collaborative',
+    'streaming',
   ].join(' ');
 
   const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -108,7 +109,6 @@ export async function handleSpotifyRedirect() {
   const redirectUri = window.location.origin + window.location.pathname;
 
   if (!verifier || !clientId) {
-    // Clean up url
     window.history.replaceState({}, document.title, window.location.pathname);
     return null;
   }
@@ -162,7 +162,7 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
 
   try {
     const res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
-    if (res.status === 204) return true; // No content success
+    if (res.status === 204) return true;
     if (res.status === 401) {
       clearSpotifyTokens();
       return null;
@@ -173,4 +173,45 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
     console.error('Spotify API fetch error:', e);
     return null;
   }
+}
+
+/**
+ * Spotify Playback Controls
+ */
+export async function spotifyPlay() {
+  return await spotifyFetch('/me/player/play', 'PUT');
+}
+
+export async function spotifyPause() {
+  return await spotifyFetch('/me/player/pause', 'PUT');
+}
+
+export async function spotifyNext() {
+  return await spotifyFetch('/me/player/next', 'POST');
+}
+
+export async function spotifyPrevious() {
+  return await spotifyFetch('/me/player/previous', 'POST');
+}
+
+export async function spotifySeek(positionMs) {
+  return await spotifyFetch(`/me/player/seek?position_ms=${Math.floor(positionMs)}`, 'PUT');
+}
+
+export async function spotifySetShuffle(state) {
+  return await spotifyFetch(`/me/player/shuffle?state=${Boolean(state)}`, 'PUT');
+}
+
+export async function spotifySetRepeat(state) {
+  // state: 'track', 'context', 'off'
+  const repeatMode = state ? 'track' : 'off';
+  return await spotifyFetch(`/me/player/repeat?state=${repeatMode}`, 'PUT');
+}
+
+export async function spotifyGetPlayback() {
+  return await spotifyFetch('/me/player');
+}
+
+export async function spotifyGetUserProfile() {
+  return await spotifyFetch('/me');
 }

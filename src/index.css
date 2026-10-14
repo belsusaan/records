@@ -2,34 +2,21 @@
 
 @layer base {
   :root {
-    --bg-dark: #0e090b;
-    --paper-bg: #1c1517;
-    --accent-crimson: #8f1d2c;
-    --accent-crimson-light: #b82d3e;
-    --accent-gold: #d4a366;
-    --text-vintage: #e6ded8;
-    --text-muted: #9f8f8b;
+    --bg-dark: #1b0e0e;
+    --text-vintage: #fdfaf6;
   }
 
   body {
-    background-color: #0d080a;
-    background-image: 
-      radial-gradient(ellipse at 50% 20%, rgba(143, 29, 44, 0.12) 0%, transparent 60%),
-      radial-gradient(circle at 85% 85%, rgba(60, 12, 17, 0.25) 0%, transparent 45%),
-      radial-gradient(circle at 15% 75%, rgba(30, 20, 24, 0.3) 0%, transparent 50%);
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #1a0e0e;
+    font-family: 'Butterfly Kids', cursive;
     color: var(--text-vintage);
     min-height: 100vh;
     overflow-x: hidden;
   }
-}
 
-.font-serif-vintage {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-}
-
-.font-handwriting {
-  font-family: 'Caveat', cursive;
+  *, button, input, textarea, p, h1, h2, h3, span {
+    font-family: 'Butterfly Kids', cursive;
+  }
 }
 
 .font-butterfly {
@@ -50,10 +37,6 @@
   -webkit-backface-visibility: hidden;
 }
 
-.rotate-y-180 {
-  transform: rotateY(180deg);
-}
-
 /* Vinyl Smooth Rotation */
 @keyframes vinyl-spin {
   from {
@@ -65,30 +48,21 @@
 }
 
 .animate-vinyl-spin {
-  animation: vinyl-spin 2.6s linear infinite;
+  animation: vinyl-spin 2.8s linear infinite;
 }
 
 .animate-vinyl-spin-paused {
   animation-play-state: paused;
 }
 
-/* Ambient Subtle Grain Effect */
-.bg-grain {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
-}
-
 /* Custom Scrollbar for Lyrics */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(20, 14, 16, 0.6);
-  border-radius: 9999px;
+  background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(143, 29, 44, 0.5);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(184, 45, 62, 0.8);
 }
