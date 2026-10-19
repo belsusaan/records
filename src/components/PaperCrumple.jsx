@@ -531,6 +531,9 @@ const PaperCrumple = ({
       }
       renderer.render(scene, camera);
       placeHitTarget();
+      if (held && amount.value >= 0.88) {
+        publish('crumpled');
+      }
       if (moving) wake();
     }
 
@@ -601,8 +604,8 @@ const PaperCrumple = ({
         posY.target = clamp(posY.value - speedY * coast, -limitY, limitY);
       }
       if (instant || keyboard || reduceMotion) for (const s of springs) advance(s, 0, 0, true);
-      keyboard = false;
-      publish(opts.releaseBehavior === 'stay' && amount.target > 0.001 ? 'crumpled' : memory.target > 0.001 ? 'creased' : 'flat');
+      const isBall = amount.value >= 0.78 || amount.target >= 0.78;
+      publish(opts.releaseBehavior === 'stay' ? (isBall ? 'crumpled' : (amount.target > 0.05 ? 'creased' : 'flat')) : (memory.target > 0.001 ? 'creased' : 'flat'));
       wake();
     }
 

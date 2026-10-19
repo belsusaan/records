@@ -12,7 +12,6 @@ import PaperCrumple from './PaperCrumple';
  * Fondo oscuro con las imágenes de palabras flotando en el fondo como atmósfera.
  */
 export default function WordImageIntro({ isOpen, onOpen }) {
-  const [crumpleCount, setCrumpleCount] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
 
   const handleStateChange = useCallback(
@@ -20,18 +19,11 @@ export default function WordImageIntro({ isOpen, onOpen }) {
       if (transitioning || isOpen) return;
 
       if (state === 'crumpled') {
-        // Increment crumple count — after 1 full crumple, open the player
-        setCrumpleCount((prev) => {
-          const next = prev + 1;
-          if (next >= 1) {
-            setTransitioning(true);
-            // Small delay so user sees the crumpled ball before transition
-            setTimeout(() => {
-              onOpen();
-            }, 600);
-          }
-          return next;
-        });
+        setTransitioning(true);
+        // Small delay so user sees the crumpled ball before transition
+        setTimeout(() => {
+          onOpen();
+        }, 700);
       }
     },
     [transitioning, isOpen, onOpen]
@@ -73,26 +65,6 @@ export default function WordImageIntro({ isOpen, onOpen }) {
             }}
           />
 
-          {/* ── Hint text at top ── */}
-          <motion.p
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: transitioning ? 0 : [0, 0.7, 0.7, 0], y: 0 }}
-            transition={
-              transitioning
-                ? { duration: 0.2 }
-                : {
-                    delay: 1.8,
-                    duration: 3.5,
-                    times: [0, 0.15, 0.85, 1],
-                    repeat: Infinity,
-                    repeatDelay: 1.5,
-                  }
-            }
-            className="absolute top-8 sm:top-10 font-butterfly text-[#d4a366]/70 text-sm sm:text-base tracking-widest uppercase select-none pointer-events-none"
-          >
-            ✦ sostén y arrastra para arrugar ✦
-          </motion.p>
-
           {/* ────────────────────────────────────────── */}
           {/* THE PAPER CRUMPLE — full WebGL interactive */}
           {/* ────────────────────────────────────────── */}
@@ -105,6 +77,7 @@ export default function WordImageIntro({ isOpen, onOpen }) {
           >
             <PaperCrumple
               src="/img/letter.png"
+              backSrc="/img/bg.png"
               alt="Carta: For the record, i love you more"
               width={560}
               height={420}
@@ -112,13 +85,13 @@ export default function WordImageIntro({ isOpen, onOpen }) {
               imageFit="contain"
               releaseBehavior="stay"
               crumpleAmount={1}
-              crumpleDuration={0.45}
-              releaseDuration={0.35}
+              crumpleDuration={2.2}
+              releaseDuration={0.45}
               foldCount={7}
               foldSharpness={0.65}
               wrinkleDepth={0.8}
               creaseStrength={0.2}
-              paperColor="#e8e0d8"
+              paperColor="#f2ece1"
               roughness={0.88}
               paperTexture={0.12}
               lightIntensity={2.0}
@@ -138,18 +111,6 @@ export default function WordImageIntro({ isOpen, onOpen }) {
               className="w-full"
             />
           </motion.div>
-
-          {/* ── Bottom hint ── */}
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: transitioning ? 0 : 1, y: 0 }}
-            transition={transitioning ? { duration: 0.2 } : { delay: 0.8, duration: 0.6 }}
-            className="absolute bottom-8 sm:bottom-10 font-butterfly text-[#edd19c]/60 text-base sm:text-xl tracking-wide select-none pointer-events-none"
-          >
-            {crumpleCount === 0
-              ? '♥ una carta para ti ♥'
-              : '✦ sigue arrugando... ✦'}
-          </motion.p>
 
           {/* ── Transition overlay flash ── */}
           <AnimatePresence>

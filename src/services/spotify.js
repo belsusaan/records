@@ -8,18 +8,25 @@ const SPOTIFY_TOKEN_KEY = 'spotify_access_token';
 const SPOTIFY_REFRESH_KEY = 'spotify_refresh_token';
 const SPOTIFY_EXPIRES_KEY = 'spotify_token_expires_at';
 const SPOTIFY_VERIFIER_KEY = 'spotify_code_verifier';
+const SPOTIFY_REDIRECT_KEY = 'spotify_redirect_uri';
 
 // Configured Spotify Client ID provided by user
 export const DEFAULT_CLIENT_ID = 'ce48e7726f0f420faf794d16da8bcbf9';
 export const DEFAULT_PLAYLIST_ID = '37i9dQZF1DXcBWIGoYBM5M'; // Fallback playlist
 
 export function getStoredConfig() {
+  const envClientId = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SPOTIFY_CLIENT_ID;
   return {
-    clientId: localStorage.getItem(SPOTIFY_CLIENT_ID_KEY) || DEFAULT_CLIENT_ID,
+    clientId: localStorage.getItem(SPOTIFY_CLIENT_ID_KEY) || envClientId || DEFAULT_CLIENT_ID,
     playlistId: localStorage.getItem(SPOTIFY_PLAYLIST_ID_KEY) || DEFAULT_PLAYLIST_ID,
     accessToken: localStorage.getItem(SPOTIFY_TOKEN_KEY) || null,
     expiresAt: Number(localStorage.getItem(SPOTIFY_EXPIRES_KEY)) || 0,
   };
+}
+
+export function isSpotifyAuthenticated() {
+  const { accessToken, expiresAt } = getStoredConfig();
+  return Boolean(accessToken && Date.now() < expiresAt);
 }
 
 export function saveSpotifyConfig(clientId, playlistId) {
@@ -38,6 +45,7 @@ export function clearSpotifyTokens() {
   localStorage.removeItem(SPOTIFY_REFRESH_KEY);
   localStorage.removeItem(SPOTIFY_EXPIRES_KEY);
   localStorage.removeItem(SPOTIFY_VERIFIER_KEY);
+  localStorage.removeItem(SPOTIFY_REDIRECT_KEY);
 }
 
 // PKCE Generation
@@ -74,6 +82,7 @@ export async function initiateSpotifyAuth(clientId) {
   const challenge = await generateCodeChallenge(verifier);
 
   const redirectUri = window.location.origin + window.location.pathname;
+  localStorage.setItem(SPOTIFY_REDIRECT_KEY, redirectUri);
   const scopes = [
     'user-read-playback-state',
     'user-modify-playback-state',
@@ -106,7 +115,7 @@ export async function handleSpotifyRedirect() {
 
   const verifier = localStorage.getItem(SPOTIFY_VERIFIER_KEY);
   const clientId = getStoredConfig().clientId;
-  const redirectUri = window.location.origin + window.location.pathname;
+  const redirectUri = localStorage.getItem(SPOTIFY_REDIRECT_KEY) || (window.location.origin + window.location.pathname);
 
   if (!verifier || !clientId) {
     window.history.replaceState({}, document.title, window.location.pathname);

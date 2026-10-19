@@ -1,12 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAudio } from './hooks/useAudio';
 import WordImageIntro from './components/WordImageIntro';
 import TurntableCard from './components/TurntableCard';
 import LyricsBooklet from './components/LyricsBooklet';
+import SpotifyModal from './components/SpotifyModal';
+import {
+  handleSpotifyRedirect,
+  isSpotifyAuthenticated,
+  spotifyGetUserProfile,
+} from './services/spotify';
 
 export default function App() {
   const [isGiftOpened, setIsGiftOpened] = useState(false);
+  const [showSpotifyModal, setShowSpotifyModal] = useState(false);
+  const [isSpotifyAuth, setIsSpotifyAuth] = useState(isSpotifyAuthenticated());
+  const [spotifyUser, setSpotifyUser] = useState(null);
+
+  // Check Spotify OAuth redirect on load
+  useEffect(() => {
+    async function processSpotifyAuth() {
+      const token = await handleSpotifyRedirect();
+      if (token || isSpotifyAuthenticated()) {
+        setIsSpotifyAuth(true);
+        setIsGiftOpened(true); // Open directly to the player upon successful auth redirect
+        try {
+          const profile = await spotifyGetUserProfile();
+          if (profile?.display_name) {
+            setSpotifyUser(profile.display_name);
+          }
+        } catch (e) {
+          console.log('Error fetching Spotify profile:', e);
+        }
+      }
+    }
+    processSpotifyAuth();
+  }, []);
 
   const {
     activeSide,
@@ -86,6 +115,38 @@ export default function App() {
           </motion.div>
         </div>
       </main>
+
+      {/* ================= SPOTIFY STATUS PILL & MODAL ================= */}
+      {isGiftOpened && (
+        <button
+          type="button"
+          onClick={() => setShowSpotifyModal(true)}
+          className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#12080a]/85 hover:bg-[#1e0d11] border border-[#d4a366]/25 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
+          title="Configurar Spotify API"
+        >
+          <span
+            className={`w-2 h-2 rounded-full transition-colors ${
+              isSpotifyAuth
+                ? 'bg-[#1db954] shadow-[0_0_8px_#1db954]'
+                : 'bg-white/40 group-hover:bg-[#1db954]'
+            }`}
+          />
+          <span className="text-[#eedcc5]/90 text-[12px] tracking-wide font-sans">
+            {isSpotifyAuth ? (spotifyUser || 'Spotify Conectado') : 'Conectar Spotify'}
+          </span>
+        </button>
+      )}
+
+      <SpotifyModal
+        isOpen={showSpotifyModal}
+        onClose={() => setShowSpotifyModal(false)}
+        isConnected={isSpotifyAuth}
+        spotifyUser={spotifyUser}
+        onDisconnect={() => {
+          setIsSpotifyAuth(false);
+          setSpotifyUser(null);
+        }}
+      />
     </div>
   );
 }

@@ -10,6 +10,16 @@ import {
   startProceduralMusic,
   stopProceduralMusic,
 } from '../audio/proceduralAudio';
+import {
+  isSpotifyAuthenticated,
+  spotifyPlay,
+  spotifyPause,
+  spotifyNext,
+  spotifyPrevious,
+  spotifySeek,
+  spotifySetShuffle,
+  spotifySetRepeat,
+} from '../services/spotify';
 
 export function useAudio() {
   const [activeSide, setActiveSide] = useState('A'); // 'A' or 'B'
@@ -144,6 +154,10 @@ export function useAudio() {
       startVinylCrackle(effectiveVolume * 0.25);
     }
 
+    if (isSpotifyAuthenticated()) {
+      spotifyPlay().catch((err) => console.log('Spotify playback notice:', err));
+    }
+
     const audio = audioRef.current;
     if (audio.src && !isUsingProceduralFallback) {
       audio
@@ -165,6 +179,9 @@ export function useAudio() {
   }, [effectiveVolume, isCrackleEnabled, isUsingProceduralFallback, currentTrack]);
 
   const pauseAudio = useCallback(() => {
+    if (isSpotifyAuthenticated()) {
+      spotifyPause().catch((err) => console.log('Spotify playback notice:', err));
+    }
     playNeedleLiftSFX();
     stopVinylCrackle();
     stopProceduralMusic();
@@ -195,6 +212,9 @@ export function useAudio() {
   }, [isLooping]);
 
   const nextTrack = useCallback(() => {
+    if (isSpotifyAuthenticated()) {
+      spotifyNext().catch((err) => console.log('Spotify playback notice:', err));
+    }
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
     if (isShuffle) {
       let nextIdx = Math.floor(Math.random() * list.length);
@@ -208,6 +228,9 @@ export function useAudio() {
   }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex]);
 
   const prevTrack = useCallback(() => {
+    if (isSpotifyAuthenticated()) {
+      spotifyPrevious().catch((err) => console.log('Spotify playback notice:', err));
+    }
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
     if (currentTime > 3) {
       if (audioRef.current) audioRef.current.currentTime = 0;
@@ -224,6 +247,10 @@ export function useAudio() {
         targetSec = fractionOrSeconds * duration;
       }
       targetSec = Math.max(0, Math.min(targetSec, duration));
+
+      if (isSpotifyAuthenticated()) {
+        spotifySeek(targetSec * 1000).catch((err) => console.log('Spotify seek notice:', err));
+      }
 
       setCurrentTime(targetSec);
       if (audioRef.current && !isUsingProceduralFallback) {
@@ -252,11 +279,23 @@ export function useAudio() {
   }, []);
 
   const toggleLoop = useCallback(() => {
-    setIsLooping((prev) => !prev);
+    setIsLooping((prev) => {
+      const next = !prev;
+      if (isSpotifyAuthenticated()) {
+        spotifySetRepeat(next).catch(() => {});
+      }
+      return next;
+    });
   }, []);
 
   const toggleShuffle = useCallback(() => {
-    setIsShuffle((prev) => !prev);
+    setIsShuffle((prev) => {
+      const next = !prev;
+      if (isSpotifyAuthenticated()) {
+        spotifySetShuffle(next).catch(() => {});
+      }
+      return next;
+    });
   }, []);
 
   const toggleCrackle = useCallback(() => {
