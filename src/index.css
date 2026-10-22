@@ -10,9 +10,9 @@
   }
 
   body {
-    background-color: #37000A;
+    background-color: #EEABC4;
     font-family: 'Dongle', sans-serif;
-    color: #F4F1DE;
+    color: #37000A;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -66,9 +66,9 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(238, 171, 196, 0.25);
+  background: rgba(146, 55, 77, 0.35);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(238, 171, 196, 0.45);
+  background: rgba(146, 55, 77, 0.65);
 }

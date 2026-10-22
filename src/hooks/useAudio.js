@@ -36,7 +36,7 @@ export function useAudio() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffle, setIsShuffle] = useState(false);
-  const [isCrackleEnabled, setIsCrackleEnabled] = useState(true);
+  const [isCrackleEnabled, setIsCrackleEnabled] = useState(false);
   const [isUsingProceduralFallback, setIsUsingProceduralFallback] = useState(false);
   const [isSpotifyLive, setIsSpotifyLive] = useState(false);
 
@@ -48,6 +48,22 @@ export function useAudio() {
 
   // Helper to get effective volume
   const effectiveVolume = isMuted ? 0 : volume;
+
+  // Continuous smooth progress ticker whenever playing so lyrics advance in real time
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const ticker = setInterval(() => {
+      setCurrentTime((prev) => {
+        if (duration > 0 && prev >= duration) {
+          return prev;
+        }
+        return prev + 0.25;
+      });
+    }, 250);
+
+    return () => clearInterval(ticker);
+  }, [isPlaying, duration]);
 
   // Poll Spotify playback state when authenticated
   useEffect(() => {
@@ -213,9 +229,7 @@ export function useAudio() {
     getAudioContext();
     playNeedleDropSFX();
 
-    if (isCrackleEnabled) {
-      startVinylCrackle(effectiveVolume * 0.25);
-    }
+    stopVinylCrackle();
 
     if (isSpotifyAuthenticated()) {
       const targetUri = forceTrackUri || currentTrack?.uri;

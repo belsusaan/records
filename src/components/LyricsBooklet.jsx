@@ -71,42 +71,38 @@ export default function LyricsBooklet({
 
   // Smooth scroll active line into middle of container
   useEffect(() => {
-    if (activeLineRef.current && scrollContainerRef.current) {
-      activeLineRef.current.scrollIntoView({
+    const container = scrollContainerRef.current;
+    const activeEl = activeLineRef.current;
+    if (activeEl && container) {
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+      const relativeTop = activeRect.top - containerRect.top + container.scrollTop;
+      const targetScroll = relativeTop - container.clientHeight / 2 + activeRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, targetScroll),
         behavior: 'smooth',
-        block: 'center',
       });
     }
   }, [activeIndex]);
 
   return (
     <div
-      className={`w-full max-w-[520px] flex flex-col justify-start text-left select-none ${className}`}
+      className={`w-full max-w-[520px] flex flex-col justify-start text-left select-none overflow-x-hidden ${className}`}
     >
       {/* ================= 1. HEADER (TITLE & ARTIST) ================= */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-0.5 rounded-full bg-[#1C3041] border border-[#92374D]/50 text-[#EEABC4] text-xl font-dongle shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-[#EEABC4] animate-pulse" />
-            <Sparkles className="w-4 h-4 text-[#EEABC4]" />
-            <span className="leading-none">{isSynced ? 'Letras sincronizadas en vivo' : 'Letras de la canción'}</span>
-          </div>
-          {isFetchingLyrics && (
-            <span className="text-lg text-[#EEABC4]/60 font-dongle italic">Buscando...</span>
-          )}
-        </div>
-
-        <h1 className="text-4xl sm:text-5xl font-bold text-[#F4F1DE] tracking-wide leading-tight drop-shadow-sm font-butterfly">
+      <div className="mb-5 pl-4 sm:pl-6">
+        <h1 className="text-4xl sm:text-5xl font-bold text-[#37000A] tracking-wide leading-tight drop-shadow-sm font-butterfly">
           {track?.title || 'En Un Sólo Día'}{' '}
-          <span className="mx-2 font-light text-[#EEABC4]/50">•</span>{' '}
-          <span className="font-dongle text-3xl sm:text-4xl text-[#EEABC4] font-normal">{track?.artist || 'Morat'}</span>
+          <span className="mx-2 font-light text-[#92374D]/50">•</span>{' '}
+          <span className="font-dongle text-3xl sm:text-4xl text-[#92374D] font-bold">{track?.artist || 'Morat'}</span>
         </h1>
       </div>
 
       {/* ================= 2. SYNCHRONIZED LYRICS LIST ================= */}
       <div
         ref={scrollContainerRef}
-        className="w-full space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar pr-3 py-2 scroll-smooth"
+        className="w-full space-y-3.5 overflow-y-auto overflow-x-hidden max-h-[420px] custom-scrollbar pl-4 sm:pl-6 pr-4 py-3 scroll-smooth"
       >
         {lyricsToDisplay.map((line, idx) => {
           const isPast = activeIndex > idx;
@@ -117,13 +113,13 @@ export default function LyricsBooklet({
               key={`${idx}-${line.time}`}
               ref={isActive ? activeLineRef : null}
               onClick={() => onSeek && onSeek(line.time)}
-              whileHover={{ x: 6 }}
-              className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug ${
+              whileHover={{ x: 4 }}
+              className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug break-words ${
                 isActive
-                  ? 'text-[#F4F1DE] text-3xl sm:text-4xl font-semibold scale-[1.03] origin-left drop-shadow-[0_0_15px_rgba(244,241,222,0.9)] opacity-100'
+                  ? 'text-[#37000A] text-3xl sm:text-4xl font-bold drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] opacity-100'
                   : isPast
-                  ? 'text-[#F4F1DE]/75 text-2xl sm:text-3xl hover:text-[#F4F1DE]'
-                  : 'text-[#EEABC4]/75 text-2xl sm:text-3xl opacity-75 hover:opacity-100 hover:text-[#EEABC4]'
+                  ? 'text-[#37000A]/75 text-2xl sm:text-3xl hover:text-[#37000A]'
+                  : 'text-[#92374D]/65 text-2xl sm:text-3xl opacity-75 hover:opacity-100 hover:text-[#92374D]'
               }`}
             >
               <span>{line.text}</span>

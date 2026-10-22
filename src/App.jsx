@@ -79,13 +79,13 @@ export default function App() {
 
   // ================= PASO 1 Y 2: CARTA DE PAPEL Y TOCADISCOS =================
   return (
-    <div className="min-h-screen bg-[#37000A] text-[#F4F1DE] relative overflow-x-hidden flex flex-col justify-center items-center selection:bg-[#92374D] selection:text-[#F4F1DE] p-4 sm:p-8">
-      {/* ── Ambient Background Vignette ── */}
+    <div className="min-h-screen bg-[#EEABC4] text-[#37000A] relative overflow-x-hidden flex flex-col justify-center items-center selection:bg-[#92374D] selection:text-[#F4F1DE] p-4 sm:p-8">
+      {/* ── Ambient Background Vignette (#EEABC4 Soft Blush Glow) ── */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 30%, rgba(146,55,77,0.18) 0%, rgba(55,0,10,0.85) 60%, #150004 100%)',
+            'radial-gradient(ellipse at 50% 30%, rgba(255,235,243,0.4) 0%, rgba(238,171,196,0.95) 65%, #d98aa3 100%)',
         }}
       />
 

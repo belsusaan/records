@@ -49,7 +49,7 @@ export default function SpotifyGate({ onAuthSuccess }) {
       className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 select-none overflow-y-auto"
       style={{
         background:
-          'radial-gradient(ellipse at 50% 40%, #37000A 0%, #200006 65%, #100003 100%)',
+          'radial-gradient(ellipse at 50% 40%, #fbe3eb 0%, #EEABC4 65%, #d98aa3 100%)',
       }}
     >
       {/* ── Ambient noise / grain overlay ── */}

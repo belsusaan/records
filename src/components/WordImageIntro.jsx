@@ -40,7 +40,7 @@ export default function WordImageIntro({ isOpen, onOpen }) {
           className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
           style={{
             background:
-              'radial-gradient(ellipse at 50% 40%, #37000A 0%, #200006 60%, #100003 100%)',
+              'radial-gradient(ellipse at 50% 40%, #fbe3eb 0%, #EEABC4 65%, #d98aa3 100%)',
           }}
         >
           {/* ── Ambient grain texture ── */}

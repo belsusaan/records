@@ -88,17 +88,13 @@ export default function SpotifyModal({
 
         {isConnected ? (
           <div className="space-y-4">
-            <div className="p-3.5 rounded-2xl bg-[#37000A]/80 border border-[#92374D]/50 flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />
+            <div className="p-4 rounded-2xl bg-[#37000A]/80 border border-[#92374D]/50 flex items-center gap-3.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954] shrink-0" />
               <div className="font-dongle leading-tight">
                 <span className="block text-2xl font-bold text-[#F4F1DE]">Spotify Conectado</span>
                 <span className="text-xl text-[#EEABC4]">{spotifyUser || 'Sesión Activa'}</span>
               </div>
             </div>
-
-            <p className="text-2xl font-dongle text-[#EEABC4]/90 leading-snug">
-              El tocadiscos está vinculado a tu cuenta de Spotify. Los controles reproducen la playlist en vivo en tu dispositivo con letras sincronizadas.
-            </p>
 
             <button
               type="button"

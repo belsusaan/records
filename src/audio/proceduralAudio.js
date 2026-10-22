@@ -99,49 +99,9 @@ export function playNeedleLiftSFX() {
 /**
  * Continuous realistic vinyl crackle generator (filtered noise + random dust pops)
  */
-export function startVinylCrackle(volume = 0.22) {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
+export function startVinylCrackle(volume = 0) {
+  // Disabled: Background noise removed per user request
   stopVinylCrackle();
-
-  const bufferSize = ctx.sampleRate * 3;
-  const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate);
-
-  for (let channel = 0; channel < 2; channel++) {
-    const data = buffer.getChannelData(channel);
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      // Pinkish noise
-      const white = Math.random() * 2 - 1;
-      const pink = (lastOut + 0.02 * white) / 1.02;
-      lastOut = pink;
-
-      // Random vinyl pops and dust ticks
-      const isPop = Math.random() < 0.00065;
-      const pop = isPop ? (Math.random() * 2 - 1) * 3.5 : 0;
-
-      data[i] = pink * 0.15 + pop;
-    }
-  }
-
-  crackleSource = ctx.createBufferSource();
-  crackleSource.buffer = buffer;
-  crackleSource.loop = true;
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.value = 1600;
-  filter.Q.value = 0.8;
-
-  crackleGain = ctx.createGain();
-  crackleGain.gain.setValueAtTime(volume, ctx.currentTime);
-
-  crackleSource.connect(filter);
-  filter.connect(crackleGain);
-  crackleGain.connect(ctx.destination);
-
-  crackleSource.start();
 }
 
 export function setVinylCrackleVolume(volume) {
