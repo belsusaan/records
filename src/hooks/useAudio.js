@@ -53,14 +53,19 @@ export function useAudio() {
   useEffect(() => {
     if (!isPlaying) return;
 
+    let lastTime = performance.now();
     const ticker = setInterval(() => {
+      const now = performance.now();
+      const deltaSec = (now - lastTime) / 1000;
+      lastTime = now;
+
       setCurrentTime((prev) => {
         if (duration > 0 && prev >= duration) {
           return prev;
         }
-        return prev + 0.25;
+        return prev + deltaSec;
       });
-    }, 250);
+    }, 100);
 
     return () => clearInterval(ticker);
   }, [isPlaying, duration]);
@@ -75,14 +80,17 @@ export function useAudio() {
     let isSubscribed = true;
 
     async function checkSpotifyPlayback() {
+      const fetchStart = performance.now();
       try {
         const playback = await spotifyGetPlayback();
         if (!isSubscribed) return;
 
         if (playback && playback.item) {
+          const latencySec = (performance.now() - fetchStart) / 2000;
           const item = playback.item;
           const trackDuration = (item.duration_ms || 180000) / 1000;
-          const trackProgress = (playback.progress_ms || 0) / 1000;
+          const baseProgress = (playback.progress_ms || 0) / 1000;
+          const trackProgress = playback.is_playing ? baseProgress + latencySec : baseProgress;
 
           // Match Spotify playback with our playlist
           const idxA = playlistSideA.findIndex(
@@ -92,18 +100,56 @@ export function useAudio() {
             (t) => t.uri === item.uri || (t.title && t.title.toLowerCase() === item.name.toLowerCase())
           );
 
+          let trackChanged = false;
           if (idxA !== -1) {
-            setActiveSide((curr) => (curr !== 'A' ? 'A' : curr));
-            setCurrentTrackIndex((curr) => (curr !== idxA ? idxA : curr));
+            setActiveSide((curr) => {
+              if (curr !== 'A') {
+                trackChanged = true;
+                return 'A';
+              }
+              return curr;
+            });
+            setCurrentTrackIndex((curr) => {
+              if (curr !== idxA) {
+                trackChanged = true;
+                return idxA;
+              }
+              return curr;
+            });
           } else if (idxB !== -1) {
-            setActiveSide((curr) => (curr !== 'B' ? 'B' : curr));
-            setCurrentTrackIndex((curr) => (curr !== idxB ? idxB : curr));
+            setActiveSide((curr) => {
+              if (curr !== 'B') {
+                trackChanged = true;
+                return 'B';
+              }
+              return curr;
+            });
+            setCurrentTrackIndex((curr) => {
+              if (curr !== idxB) {
+                trackChanged = true;
+                return idxB;
+              }
+              return curr;
+            });
           }
 
           setIsSpotifyLive(true);
           setIsPlaying(Boolean(playback.is_playing));
-          setCurrentTime(trackProgress);
           setDuration(trackDuration);
+
+          // Update currentTime without backward jitter
+          setCurrentTime((curr) => {
+            if (trackChanged) return trackProgress;
+            // Large manual seek (> 2s), synchronize immediately
+            if (Math.abs(trackProgress - curr) > 2.0) {
+              return trackProgress;
+            }
+            // During playback, if Spotify network packet is slightly behind local time, do not jump backward!
+            if (playback.is_playing && trackProgress < curr) {
+              return curr;
+            }
+            return Math.max(curr, trackProgress);
+          });
 
           if (playback.is_playing && audioRef.current && !audioRef.current.paused) {
             audioRef.current.pause();

@@ -60,19 +60,51 @@ export default function LyricsBooklet({
     { time: 0, text: 'Cargando letras...' },
   ];
 
-  // Determine active lyric index
-  let activeIndex = 0;
-  for (let i = 0; i < lyricsToDisplay.length; i++) {
-    if (currentTime >= lyricsToDisplay[i].time) {
-      activeIndex = i;
+  const [activeIdx, setActiveIdx] = useState(0);
+  const lastTrackTitleRef = useRef(track?.title);
+
+  // Reset active line when track changes
+  useEffect(() => {
+    if (lastTrackTitleRef.current !== track?.title) {
+      lastTrackTitleRef.current = track?.title;
+      setActiveIdx(0);
     }
-  }
+  }, [track?.title]);
+
+  // Determine active lyric index with anti-jitter hysteresis
+  useEffect(() => {
+    if (!lyricsToDisplay || lyricsToDisplay.length === 0) return;
+
+    let computedIndex = 0;
+    for (let i = 0; i < lyricsToDisplay.length; i++) {
+      if (currentTime >= lyricsToDisplay[i].time) {
+        computedIndex = i;
+      }
+    }
+
+    setActiveIdx((prevIdx) => {
+      // Advance immediately when playback moves forward
+      if (computedIndex > prevIdx) {
+        return computedIndex;
+      }
+      // If time went backwards: only jump back on true rewinds/seeks (> 1.2s or track reset)
+      if (computedIndex < prevIdx) {
+        const currentLineTime = lyricsToDisplay[prevIdx]?.time ?? 0;
+        if (currentTime < currentLineTime - 1.2 || currentTime < 1.0) {
+          return computedIndex;
+        }
+        // Suppress millisecond boundary jitter
+        return prevIdx;
+      }
+      return prevIdx;
+    });
+  }, [currentTime, lyricsToDisplay]);
 
   // Smooth scroll active line into middle of container
   useEffect(() => {
     const timer = setTimeout(() => {
       const container = scrollContainerRef.current;
-      const activeEl = document.getElementById(`lyric-line-${activeIndex}`);
+      const activeEl = document.getElementById(`lyric-line-${activeIdx}`);
       if (activeEl && container) {
         const targetScroll =
           activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
@@ -85,7 +117,7 @@ export default function LyricsBooklet({
     }, 40);
 
     return () => clearTimeout(timer);
-  }, [activeIndex, lyricsToDisplay]);
+  }, [activeIdx, lyricsToDisplay]);
 
   return (
     <div
@@ -110,8 +142,8 @@ export default function LyricsBooklet({
         className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[430px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-36 pb-52"
       >
         {lyricsToDisplay.map((line, idx) => {
-          const isPast = activeIndex > idx;
-          const isActive = activeIndex === idx;
+          const isPast = activeIdx > idx;
+          const isActive = activeIdx === idx;
 
           return (
             <motion.div
