@@ -48,6 +48,37 @@ export function clearSpotifyTokens() {
   localStorage.removeItem(SPOTIFY_REDIRECT_KEY);
 }
 
+export async function refreshSpotifyToken() {
+  const refreshToken = localStorage.getItem(SPOTIFY_REFRESH_KEY);
+  const clientId = getStoredConfig().clientId;
+  if (!refreshToken || !clientId) return null;
+
+  try {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    });
+
+    const data = await response.json();
+    if (data.access_token) {
+      saveTokens(
+        data.access_token,
+        data.refresh_token || refreshToken,
+        data.expires_in || 3600
+      );
+      return data.access_token;
+    }
+  } catch (err) {
+    console.error('Error refreshing Spotify access token:', err);
+  }
+  return null;
+}
+
 // PKCE Generation
 function generateRandomString(length) {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
@@ -153,9 +184,15 @@ export async function handleSpotifyRedirect() {
  * Spotify API fetch wrapper
  */
 export async function spotifyFetch(endpoint, method = 'GET', body = null) {
-  const { accessToken, expiresAt } = getStoredConfig();
-  if (!accessToken || Date.now() > expiresAt) {
-    return null;
+  let { accessToken, expiresAt } = getStoredConfig();
+  
+  if (!accessToken || Date.now() >= expiresAt) {
+    const refreshed = await refreshSpotifyToken();
+    if (refreshed) {
+      accessToken = refreshed;
+    } else {
+      return null;
+    }
   }
 
   const options = {
@@ -170,9 +207,17 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
   }
 
   try {
-    const res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
+    let res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
     if (res.status === 204) return true;
     if (res.status === 401) {
+      // Try refresh once
+      const newToken = await refreshSpotifyToken();
+      if (newToken) {
+        options.headers.Authorization = `Bearer ${newToken}`;
+        res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
+        if (res.status === 204) return true;
+        if (res.ok) return await res.json();
+      }
       clearSpotifyTokens();
       return null;
     }

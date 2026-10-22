@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAudio } from './hooks/useAudio';
 import WordImageIntro from './components/WordImageIntro';
 import TurntableCard from './components/TurntableCard';
 import LyricsBooklet from './components/LyricsBooklet';
+import SpotifyGate from './components/SpotifyGate';
 import SpotifyModal from './components/SpotifyModal';
 import {
   handleSpotifyRedirect,
@@ -23,7 +24,7 @@ export default function App() {
       const token = await handleSpotifyRedirect();
       if (token || isSpotifyAuthenticated()) {
         setIsSpotifyAuth(true);
-        setIsGiftOpened(true); // Open directly to the player upon successful auth redirect
+        // Do NOT skip the paper intro: user will see the paper crumple now that they are authenticated!
         try {
           const profile = await spotifyGetUserProfile();
           if (profile?.display_name) {
@@ -54,6 +55,7 @@ export default function App() {
     toggleLoop,
     isShuffle,
     toggleShuffle,
+    isSpotifyLive,
   } = useAudio();
 
   const handleOpenGift = () => {
@@ -63,15 +65,28 @@ export default function App() {
     }, 600);
   };
 
+  const handleDisconnect = () => {
+    setIsSpotifyAuth(false);
+    setSpotifyUser(null);
+    setIsGiftOpened(false);
+  };
+
+  // ================= PASO 0: BLOQUEO OBLIGATORIO DE SPOTIFY =================
+  // Si no está autenticado en Spotify, se muestra ÚNICAMENTE la pantalla de acceso
+  if (!isSpotifyAuth) {
+    return <SpotifyGate onAuthSuccess={() => setIsSpotifyAuth(true)} />;
+  }
+
+  // ================= PASO 1 Y 2: CARTA DE PAPEL Y TOCADISCOS =================
   return (
     <div className="min-h-screen bg-[#1b0e0e] text-white font-butterfly relative overflow-x-hidden flex flex-col justify-center items-center selection:bg-[#72a5f8] selection:text-white p-4 sm:p-8">
-      {/* ================= PANTALLA 1: INTRO CON PALABRAS ================= */}
+      {/* ================= PANTALLA 1: INTRO CON CARTA DE PAPEL ================= */}
       <WordImageIntro
         isOpen={isGiftOpened}
         onOpen={handleOpenGift}
       />
 
-      {/* ================= PANTALLA 2: TOCADISCOS ================= */}
+      {/* ================= PANTALLA 2: TOCADISCOS Y LETRAS ================= */}
       <main className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-center my-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center justify-center w-full">
           {/* ================= 1. IZQUIERDA: TARJETA AZUL DEL TOCADISCOS ================= */}
@@ -99,7 +114,7 @@ export default function App() {
             />
           </motion.div>
 
-          {/* ================= 2. DERECHA: PANEL DE LETRAS ================= */}
+          {/* ================= 2. DERECHA: PANEL DE LETRAS SINCRONIZADAS ================= */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -116,23 +131,17 @@ export default function App() {
         </div>
       </main>
 
-      {/* ================= SPOTIFY STATUS PILL & MODAL ================= */}
+      {/* ================= SPOTIFY ACCOUNT PILL (SOLO EN EL REPRODUCTOR) ================= */}
       {isGiftOpened && (
         <button
           type="button"
           onClick={() => setShowSpotifyModal(true)}
           className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#12080a]/85 hover:bg-[#1e0d11] border border-[#d4a366]/25 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
-          title="Configurar Spotify API"
+          title="Cuenta de Spotify conectada"
         >
-          <span
-            className={`w-2 h-2 rounded-full transition-colors ${
-              isSpotifyAuth
-                ? 'bg-[#1db954] shadow-[0_0_8px_#1db954]'
-                : 'bg-white/40 group-hover:bg-[#1db954]'
-            }`}
-          />
+          <span className="w-2 h-2 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />
           <span className="text-[#eedcc5]/90 text-[12px] tracking-wide font-sans">
-            {isSpotifyAuth ? (spotifyUser || 'Spotify Conectado') : 'Conectar Spotify'}
+            {spotifyUser || 'Spotify Conectado'}
           </span>
         </button>
       )}
@@ -142,10 +151,7 @@ export default function App() {
         onClose={() => setShowSpotifyModal(false)}
         isConnected={isSpotifyAuth}
         spotifyUser={spotifyUser}
-        onDisconnect={() => {
-          setIsSpotifyAuth(false);
-          setSpotifyUser(null);
-        }}
+        onDisconnect={handleDisconnect}
       />
     </div>
   );

@@ -154,7 +154,7 @@ export default function SpotifyModal({
                 onClick={onClose}
                 className="flex-1 py-2 text-xs text-[#8ea4be] hover:text-white"
               >
-                Usar Modo Autónomo
+                Cerrar
               </button>
               <button
                 type="submit"

@@ -19,6 +19,7 @@ import {
   spotifySeek,
   spotifySetShuffle,
   spotifySetRepeat,
+  spotifyGetPlayback,
 } from '../services/spotify';
 
 export function useAudio() {
@@ -36,15 +37,73 @@ export function useAudio() {
   const [isShuffle, setIsShuffle] = useState(false);
   const [isCrackleEnabled, setIsCrackleEnabled] = useState(true);
   const [isUsingProceduralFallback, setIsUsingProceduralFallback] = useState(false);
+  const [spotifyTrack, setSpotifyTrack] = useState(null);
+  const [isSpotifyLive, setIsSpotifyLive] = useState(false);
 
   const audioRef = useRef(new Audio());
   const timerRef = useRef(null);
 
   const currentPlaylist = activeSide === 'A' ? playlistSideA : playlistSideB;
-  const currentTrack = currentPlaylist[currentTrackIndex] || currentPlaylist[0];
+  const localTrack = currentPlaylist[currentTrackIndex] || currentPlaylist[0];
+  const currentTrack = isSpotifyLive && spotifyTrack ? spotifyTrack : localTrack;
 
   // Helper to get effective volume
   const effectiveVolume = isMuted ? 0 : volume;
+
+  // Poll Spotify playback state when authenticated
+  useEffect(() => {
+    if (!isSpotifyAuthenticated()) {
+      setIsSpotifyLive(false);
+      return;
+    }
+
+    let isSubscribed = true;
+
+    async function checkSpotifyPlayback() {
+      try {
+        const playback = await spotifyGetPlayback();
+        if (!isSubscribed) return;
+
+        if (playback && playback.item) {
+          const item = playback.item;
+          const trackTitle = item.name;
+          const artistName = (item.artists || []).map((a) => a.name).join(', ');
+          const trackDuration = (item.duration_ms || 180000) / 1000;
+          const trackProgress = (playback.progress_ms || 0) / 1000;
+
+          setSpotifyTrack({
+            id: item.id,
+            title: trackTitle,
+            artist: artistName,
+            duration: trackDuration,
+            albumArt: item.album?.images?.[0]?.url,
+            isSpotify: true,
+          });
+
+          setIsSpotifyLive(true);
+          setIsPlaying(Boolean(playback.is_playing));
+          setCurrentTime(trackProgress);
+          setDuration(trackDuration);
+
+          if (playback.is_playing && audioRef.current && !audioRef.current.paused) {
+            audioRef.current.pause();
+          }
+        } else {
+          setIsSpotifyLive(false);
+        }
+      } catch (err) {
+        // Silently continue
+      }
+    }
+
+    checkSpotifyPlayback();
+    const interval = setInterval(checkSpotifyPlayback, 1800);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Initialize track on index/side change
   useEffect(() => {
@@ -349,6 +408,7 @@ export function useAudio() {
     isShuffle,
     isCrackleEnabled,
     isUsingProceduralFallback,
+    isSpotifyLive,
     playAudio,
     pauseAudio,
     togglePlay,
