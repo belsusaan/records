@@ -100,17 +100,21 @@ export default function LyricsBooklet({
     });
   }, [currentTime, lyricsToDisplay]);
 
-  // Smooth scroll active line into middle of container
+  // Scroll down smoothly once playback reaches around line 4 or higher (activeIdx >= 3)
   useEffect(() => {
     const timer = setTimeout(() => {
       const container = scrollContainerRef.current;
       const activeEl = document.getElementById(`lyric-line-${activeIdx}`);
       if (activeEl && container) {
-        const targetScroll =
-          activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
+        // Keep at the top for first 3 lines (activeIdx < 3)
+        // From line 4 onward, gently scroll down so the active line stays around line 3-4 position
+        let targetScroll = 0;
+        if (activeIdx >= 3) {
+          targetScroll = Math.max(0, activeEl.offsetTop - 110);
+        }
 
         container.scrollTo({
-          top: Math.max(0, targetScroll),
+          top: targetScroll,
           behavior: 'smooth',
         });
       }
@@ -124,7 +128,7 @@ export default function LyricsBooklet({
       className={`w-full max-w-[520px] flex flex-col justify-start text-left select-none overflow-x-hidden ${className}`}
     >
       {/* ================= 1. HEADER (TITLE & ARTIST) ================= */}
-      <div className="mb-4 pl-4 sm:pl-6">
+      <div className="mb-3 pl-4 sm:pl-6">
         <h1 className="text-4xl sm:text-5xl font-bold text-[#37000A] tracking-wide leading-tight drop-shadow-sm font-butterfly">
           {track?.title || 'En Un Sólo Día'}{' '}
           <span className="mx-2 font-light text-[#92374D]/50">•</span>{' '}
@@ -135,11 +139,7 @@ export default function LyricsBooklet({
       {/* ================= 2. SYNCHRONIZED LYRICS LIST ================= */}
       <div
         ref={scrollContainerRef}
-        style={{
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-        }}
-        className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[430px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-36 pb-52"
+        className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[420px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-2 pb-56"
       >
         {lyricsToDisplay.map((line, idx) => {
           const isPast = activeIdx > idx;

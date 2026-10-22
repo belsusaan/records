@@ -42,6 +42,11 @@ export function useAudio() {
 
   const audioRef = useRef(new Audio());
   const timerRef = useRef(null);
+  const spotifyAnchorRef = useRef({
+    spotifyTime: 0,
+    clientTimestamp: performance.now(),
+    isPlaying: false,
+  });
 
   const currentPlaylist = activeSide === 'A' ? playlistSideA : playlistSideB;
   const currentTrack = currentPlaylist[currentTrackIndex] || currentPlaylist[0];
@@ -49,26 +54,34 @@ export function useAudio() {
   // Helper to get effective volume
   const effectiveVolume = isMuted ? 0 : volume;
 
-  // Continuous smooth progress ticker whenever playing so lyrics advance in real time
+  // Continuous smooth progress ticker
   useEffect(() => {
     if (!isPlaying) return;
 
     let lastTime = performance.now();
     const ticker = setInterval(() => {
       const now = performance.now();
-      const deltaSec = (now - lastTime) / 1000;
-      lastTime = now;
 
-      setCurrentTime((prev) => {
-        if (duration > 0 && prev >= duration) {
-          return prev;
-        }
-        return prev + deltaSec;
-      });
+      // If Spotify is live, calculate exactly from the calibrated anchor to prevent drift
+      if (isSpotifyLive && spotifyAnchorRef.current.isPlaying) {
+        const anchor = spotifyAnchorRef.current;
+        const elapsed = (now - anchor.clientTimestamp) / 1000;
+        const currentEst = anchor.spotifyTime + elapsed;
+        setCurrentTime(currentEst);
+      } else {
+        const deltaSec = (now - lastTime) / 1000;
+        setCurrentTime((prev) => {
+          if (duration > 0 && prev >= duration) {
+            return prev;
+          }
+          return prev + deltaSec;
+        });
+      }
+      lastTime = now;
     }, 100);
 
     return () => clearInterval(ticker);
-  }, [isPlaying, duration]);
+  }, [isPlaying, isSpotifyLive, duration]);
 
   // Poll Spotify playback state when authenticated
   useEffect(() => {
@@ -86,11 +99,12 @@ export function useAudio() {
         if (!isSubscribed) return;
 
         if (playback && playback.item) {
-          const latencySec = (performance.now() - fetchStart) / 2000;
+          const arrivalTime = performance.now();
+          const latencySec = (arrivalTime - fetchStart) / 2000;
           const item = playback.item;
           const trackDuration = (item.duration_ms || 180000) / 1000;
           const baseProgress = (playback.progress_ms || 0) / 1000;
-          const trackProgress = playback.is_playing ? baseProgress + latencySec : baseProgress;
+          const exactSpotifyProgress = playback.is_playing ? baseProgress + latencySec : baseProgress;
 
           // Match Spotify playback with our playlist
           const idxA = playlistSideA.findIndex(
@@ -137,19 +151,30 @@ export function useAudio() {
           setIsPlaying(Boolean(playback.is_playing));
           setDuration(trackDuration);
 
-          // Update currentTime without backward jitter
-          setCurrentTime((curr) => {
-            if (trackChanged) return trackProgress;
-            // Large manual seek (> 2s), synchronize immediately
-            if (Math.abs(trackProgress - curr) > 2.0) {
-              return trackProgress;
+          // Calibrate anchor smoothly without jumps
+          const prevAnchor = spotifyAnchorRef.current;
+          let calibratedProgress = exactSpotifyProgress;
+
+          if (!trackChanged && prevAnchor.isPlaying && playback.is_playing) {
+            const prevEstimated =
+              prevAnchor.spotifyTime + (arrivalTime - prevAnchor.clientTimestamp) / 1000;
+            const diff = exactSpotifyProgress - prevEstimated;
+
+            // If jitter is small (< 0.7s), softly absorb it by 20% so there is zero visible jump
+            if (Math.abs(diff) < 0.7) {
+              calibratedProgress = prevEstimated + diff * 0.2;
             }
-            // During playback, if Spotify network packet is slightly behind local time, do not jump backward!
-            if (playback.is_playing && trackProgress < curr) {
-              return curr;
-            }
-            return Math.max(curr, trackProgress);
-          });
+          }
+
+          spotifyAnchorRef.current = {
+            spotifyTime: calibratedProgress,
+            clientTimestamp: arrivalTime,
+            isPlaying: Boolean(playback.is_playing),
+          };
+
+          if (trackChanged || !playback.is_playing) {
+            setCurrentTime(calibratedProgress);
+          }
 
           if (playback.is_playing && audioRef.current && !audioRef.current.paused) {
             audioRef.current.pause();
