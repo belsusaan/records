@@ -214,7 +214,13 @@ export function useAudio() {
     }
 
     if (isSpotifyAuthenticated()) {
-      spotifyPlay().catch((err) => console.log('Spotify playback notice:', err));
+      const playOpts = currentTrack?.uri
+        ? {
+            context_uri: 'spotify:playlist:4aF29SVP3mUQZItc3xiOV0',
+            offset: { uri: currentTrack.uri },
+          }
+        : null;
+      spotifyPlay(playOpts).catch((err) => console.log('Spotify playback notice:', err));
     }
 
     const audio = audioRef.current;

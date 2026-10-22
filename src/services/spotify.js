@@ -12,13 +12,19 @@ const SPOTIFY_REDIRECT_KEY = 'spotify_redirect_uri';
 
 // Configured Spotify Client ID provided by user
 export const DEFAULT_CLIENT_ID = 'ce48e7726f0f420faf794d16da8bcbf9';
-export const DEFAULT_PLAYLIST_ID = '37i9dQZF1DXcBWIGoYBM5M'; // Fallback playlist
+export const DEFAULT_PLAYLIST_ID = '4aF29SVP3mUQZItc3xiOV0'; // For the record, i love you more
 
 export function getStoredConfig() {
   const envClientId = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SPOTIFY_CLIENT_ID;
+  const storedPlaylist = localStorage.getItem(SPOTIFY_PLAYLIST_ID_KEY);
+  // Auto-upgrade legacy fallback playlist to the user's real playlist
+  const effectivePlaylist = (!storedPlaylist || storedPlaylist === '37i9dQZF1DXcBWIGoYBM5M')
+    ? DEFAULT_PLAYLIST_ID
+    : storedPlaylist;
+
   return {
     clientId: localStorage.getItem(SPOTIFY_CLIENT_ID_KEY) || envClientId || DEFAULT_CLIENT_ID,
-    playlistId: localStorage.getItem(SPOTIFY_PLAYLIST_ID_KEY) || DEFAULT_PLAYLIST_ID,
+    playlistId: effectivePlaylist,
     accessToken: localStorage.getItem(SPOTIFY_TOKEN_KEY) || null,
     expiresAt: Number(localStorage.getItem(SPOTIFY_EXPIRES_KEY)) || 0,
   };
@@ -232,8 +238,22 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
 /**
  * Spotify Playback Controls
  */
-export async function spotifyPlay() {
-  return await spotifyFetch('/me/player/play', 'PUT');
+export async function spotifyPlay(options = null) {
+  let body = null;
+  if (options) {
+    body = {};
+    if (options.context_uri) body.context_uri = options.context_uri;
+    if (options.uris) body.uris = options.uris;
+    if (options.offset) body.offset = options.offset;
+    if (options.position_ms) body.position_ms = options.position_ms;
+  }
+  return await spotifyFetch('/me/player/play', 'PUT', body);
+}
+
+export async function spotifyGetPlaylist(playlistId = null) {
+  const effectiveId = playlistId || getStoredConfig().playlistId || DEFAULT_PLAYLIST_ID;
+  if (!effectiveId) return null;
+  return await spotifyFetch(`/playlists/${effectiveId}`);
 }
 
 export async function spotifyPause() {
