@@ -77,9 +77,9 @@ export function useAudio() {
           const currentEst = anchor.spotifyTime + elapsed;
 
           // Prevent backward rubberbanding:
-          // If Spotify's packet was slightly delayed and currentEst is behind client's current time (< 3s diff),
+          // If Spotify's packet was slightly delayed and currentEst is behind client's current time (< 4s diff),
           // DO NOT jump backwards! Advance smoothly forward at normal 1x speed:
-          if (currentEst < prev && (prev - currentEst) < 3.0) {
+          if (currentEst < prev && (prev - currentEst) < 4.0) {
             return prev + deltaSec;
           }
           return currentEst;
@@ -195,13 +195,13 @@ export function useAudio() {
             // Spotify API progress packets are often delayed by 0.3s - 1.5s due to server latency.
             // If the packet is slightly behind our estimated playback time (diff < 0),
             // NEVER pull the anchor backwards! Keep it at prevEstimated:
-            if (diff < 0 && Math.abs(diff) < 3.0) {
+            if (diff < 0 && Math.abs(diff) < 4.0) {
               calibratedProgress = prevEstimated;
-            } else if (diff > 0 && diff < 1.0) {
-              // Slightly ahead: softly catch up forward
-              calibratedProgress = prevEstimated + diff * 0.25;
+            } else if (diff > 0 && diff < 2.5) {
+              // Slightly ahead: softly catch up forward without a sudden jump
+              calibratedProgress = prevEstimated + diff * 0.35;
             } else {
-              // Large seek (> 3s backward/forward) or track change: sync directly
+              // Large deliberate seek (> 4s): sync directly
               calibratedProgress = exactSpotifyProgress;
             }
           }

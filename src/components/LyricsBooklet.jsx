@@ -79,31 +79,41 @@ export default function LyricsBooklet({
 
     // If current time is prior to the first lyric line onset, we are in the intro!
     if (currentTime < lyricsToDisplay[0].time) {
-      setActiveIdx(-1);
-      return;
+      if (currentTime < 2.0 || activeIdx <= 0) {
+        setActiveIdx(-1);
+        return;
+      }
     }
 
-    let computedIndex = 0;
+    let computedIndex = -1;
     for (let i = 0; i < lyricsToDisplay.length; i++) {
       if (currentTime >= lyricsToDisplay[i].time) {
         computedIndex = i;
       }
     }
 
+    if (computedIndex < 0) return;
+
     setActiveIdx((prevIdx) => {
-      // Advance immediately when playback moves forward
+      // 1. Advance cleanly when playback reaches the next line:
       if (computedIndex > prevIdx) {
         return computedIndex;
       }
-      // If time went backwards: only jump back on true rewinds/seeks (> 1.2s or track reset)
+
+      // 2. Strict anti-rebound: NEVER jump backwards during normal forward playback!
+      // Only jump back if:
+      // - The track was restarted near the start (currentTime < 2.0s)
+      // - Or the user explicitly seeked backwards by more than 4.5 seconds
       if (computedIndex < prevIdx) {
         const currentLineTime = lyricsToDisplay[prevIdx]?.time ?? 0;
-        if (currentTime < currentLineTime - 1.2 || currentTime < 1.0) {
+        const isDeliberateRewind = currentTime < 2.0 || currentTime < currentLineTime - 4.5;
+        if (isDeliberateRewind) {
           return computedIndex;
         }
-        // Suppress millisecond boundary jitter
+        // Forward lock: hold current line, ignore network latency jitter
         return prevIdx;
       }
+
       return prevIdx;
     });
   }, [currentTime, lyricsToDisplay]);
@@ -164,7 +174,6 @@ export default function LyricsBooklet({
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-2 text-[#92374D] font-dongle text-2xl tracking-wide py-1 select-none"
           >
-            <Sparkles className="w-4 h-4 text-[#EEABC4] animate-pulse" />
             <span>Intro musical...</span>
           </motion.div>
         )}
@@ -178,13 +187,12 @@ export default function LyricsBooklet({
               key={`${idx}-${line.time}`}
               onClick={() => onSeek && onSeek(line.time)}
               whileHover={{ x: 4 }}
-              className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug break-words ${
-                isActive
-                  ? 'text-[#37000A] text-3xl sm:text-4xl font-bold drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] opacity-100 scale-[1.02] origin-left'
-                  : isPast
+              className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug break-words ${isActive
+                ? 'text-[#37000A] text-3xl sm:text-4xl font-bold drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] opacity-100 scale-[1.02] origin-left'
+                : isPast
                   ? 'text-[#37000A]/70 text-2xl sm:text-3xl hover:text-[#37000A]'
                   : 'text-[#92374D]/60 text-2xl sm:text-3xl opacity-70 hover:opacity-100 hover:text-[#92374D]'
-              }`}
+                }`}
             >
               <span>{line.text}</span>
             </motion.div>
