@@ -3,6 +3,10 @@ import { motion } from 'framer-motion';
 import Vinyl3D from './Vinyl3D';
 import TurntableArm from './TurntableArm';
 
+// Curved midline mathematically extracted from avance.png
+const AVANCE_CURVE_PATH =
+  'M 60 225 C 92 225, 92 220, 124 220 S 156 219, 188 219 S 220 214, 252 214 S 284 215, 316 215 S 348 213, 379 213 S 411 216, 443 216 S 475 223, 507 223 S 539 230, 571 230 S 603 226, 635 226 S 667 222, 699 222 S 731 219, 763 219 S 795 222, 827 222 S 859 226, 891 226 S 923 228, 954 228 S 986 229, 1018 229 S 1050 231, 1082 231 S 1114 235, 1146 235 S 1178 238, 1210 238';
+
 export default function TurntableCard({
   activeSide,
   isPlaying,
@@ -21,20 +25,35 @@ export default function TurntableCard({
   className = '',
 }) {
   const progressBarRef = useRef(null);
+  const svgPathRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [knobPos, setKnobPos] = useState({ x: 60, y: 225 });
 
-  // Painted line bounds on avance.png: ~4% to ~96%
-  const minPct = 4;
-  const maxPct = 96;
   const progressRatio = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
-  const sliderPositionPct = minPct + progressRatio * (maxPct - minPct);
 
+  // Track position along the exact drawn curve in real-time
+  useEffect(() => {
+    if (svgPathRef.current) {
+      try {
+        const total = svgPathRef.current.getTotalLength();
+        const p = svgPathRef.current.getPointAtLength(progressRatio * total);
+        if (p && !Number.isNaN(p.x) && !Number.isNaN(p.y)) {
+          setKnobPos({ x: p.x, y: p.y });
+        }
+      } catch {
+        setKnobPos({ x: 60 + progressRatio * (1210 - 60), y: 225 });
+      }
+    }
+  }, [progressRatio]);
+
+  // Click & Drag seeking along the bar
   const calculateSeekFraction = (clientX) => {
     if (!progressBarRef.current) return 0;
     const rect = progressBarRef.current.getBoundingClientRect();
     const clickX = clientX - rect.left;
-    const rawPct = (clickX / rect.width) * 100;
-    const normalized = (rawPct - minPct) / (maxPct - minPct);
+    const ratio = clickX / rect.width;
+    // Map between drawing bounds (approx 4.7% to 94.5%)
+    const normalized = (ratio - 0.047) / (0.945 - 0.047);
     return Math.max(0, Math.min(1, normalized));
   };
 
@@ -60,7 +79,7 @@ export default function TurntableCard({
 
   return (
     <div
-      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#92374D] border-2 border-[#37000A]/35 shadow-[0_25px_60px_rgba(55,0,10,0.45),0_0_40px_rgba(146,55,77,0.3)] select-none ${className}`}
+      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#92374D] shadow-[0_25px_60px_rgba(55,0,10,0.45),0_0_40px_rgba(146,55,77,0.3)] select-none ${className}`}
     >
       {/* ================= 1. VINYL RECORD WITH REACTBITS FLIPCARD & HAND-PAINTED TONEARM ================= */}
       <div className="relative w-full max-w-[310px] sm:max-w-[340px] aspect-square flex items-center justify-center mt-1 mb-2">
@@ -91,12 +110,12 @@ export default function TurntableCard({
         </p>
       </div>
 
-      {/* ================= 3. AVANCE.PNG PROGRESS BAR ================= */}
+      {/* ================= 3. AVANCE.PNG PROGRESS BAR WITH EXACT CURVE TRACING ================= */}
       <div className="w-full px-1 my-1">
         <div
           ref={progressBarRef}
           onPointerDown={handlePointerDown}
-          className="relative w-full h-10 sm:h-11 cursor-pointer select-none flex items-center group"
+          className="relative w-full h-11 sm:h-12 cursor-pointer select-none flex items-center group"
           role="slider"
           aria-label="Barra de avance de la canción"
           aria-valuemin={0}
@@ -111,23 +130,49 @@ export default function TurntableCard({
             draggable={false}
           />
 
-          {/* Progress Fill Line along painted line (#EEABC4 blush glow) */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 left-[4%] h-[3px] bg-[#EEABC4] rounded-full pointer-events-none shadow-[0_0_8px_#EEABC4]"
-            style={{ width: `${progressRatio * (maxPct - minPct)}%` }}
-          />
-
-          {/* Slider Stylus Head (Sliding directly on painted stroke) */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-transform duration-75 pointer-events-none z-10"
-            style={{ left: `${sliderPositionPct}%` }}
+          {/* SVG Following the exact curve of the hand-painted avance.png stroke */}
+          <svg
+            viewBox="0 0 1280 394"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
           >
-            <div className="relative group-hover:scale-125 transition-transform">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#F4F1DE] shadow-[0_0_8px_rgba(244,241,222,0.9),0_2px_4px_rgba(0,0,0,0.5)] border border-[#37000A] flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#92374D]" />
-              </div>
-            </div>
-          </div>
+            <defs>
+              <filter id="brush-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#F4F1DE" floodOpacity="0.85" />
+              </filter>
+            </defs>
+
+            {/* Glowing White Line following the exact drawing curve */}
+            <path
+              ref={svgPathRef}
+              d={AVANCE_CURVE_PATH}
+              fill="none"
+              stroke="#F4F1DE"
+              strokeWidth="13"
+              strokeLinecap="round"
+              pathLength="1000"
+              strokeDasharray="1000"
+              strokeDashoffset={1000 * (1 - progressRatio)}
+              filter="url(#brush-glow)"
+            />
+
+            {/* Slider Stylus Head perfectly glides along the curve */}
+            <g
+              transform={`translate(${knobPos.x}, ${knobPos.y})`}
+              className="transition-transform duration-75 group-hover:scale-110"
+            >
+              {/* Outer white eggshell circle */}
+              <circle
+                r="36"
+                fill="#F4F1DE"
+                stroke="#37000A"
+                strokeWidth="5"
+                filter="url(#brush-glow)"
+              />
+              {/* Inner ruby dot */}
+              <circle r="15" fill="#92374D" />
+            </g>
+          </svg>
         </div>
       </div>
 

@@ -10,7 +10,6 @@ export default function LyricsBooklet({
   className = '',
 }) {
   const scrollContainerRef = useRef(null);
-  const activeLineRef = useRef(null);
 
   const [dynamicLyrics, setDynamicLyrics] = useState(null);
   const [isFetchingLyrics, setIsFetchingLyrics] = useState(false);
@@ -71,27 +70,29 @@ export default function LyricsBooklet({
 
   // Smooth scroll active line into middle of container
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    const activeEl = activeLineRef.current;
-    if (activeEl && container) {
-      const containerRect = container.getBoundingClientRect();
-      const activeRect = activeEl.getBoundingClientRect();
-      const relativeTop = activeRect.top - containerRect.top + container.scrollTop;
-      const targetScroll = relativeTop - container.clientHeight / 2 + activeRect.height / 2;
+    const timer = setTimeout(() => {
+      const container = scrollContainerRef.current;
+      const activeEl = document.getElementById(`lyric-line-${activeIndex}`);
+      if (activeEl && container) {
+        const targetScroll =
+          activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
 
-      container.scrollTo({
-        top: Math.max(0, targetScroll),
-        behavior: 'smooth',
-      });
-    }
-  }, [activeIndex]);
+        container.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth',
+        });
+      }
+    }, 40);
+
+    return () => clearTimeout(timer);
+  }, [activeIndex, lyricsToDisplay]);
 
   return (
     <div
       className={`w-full max-w-[520px] flex flex-col justify-start text-left select-none overflow-x-hidden ${className}`}
     >
       {/* ================= 1. HEADER (TITLE & ARTIST) ================= */}
-      <div className="mb-5 pl-4 sm:pl-6">
+      <div className="mb-4 pl-4 sm:pl-6">
         <h1 className="text-4xl sm:text-5xl font-bold text-[#37000A] tracking-wide leading-tight drop-shadow-sm font-butterfly">
           {track?.title || 'En Un Sólo Día'}{' '}
           <span className="mx-2 font-light text-[#92374D]/50">•</span>{' '}
@@ -102,7 +103,11 @@ export default function LyricsBooklet({
       {/* ================= 2. SYNCHRONIZED LYRICS LIST ================= */}
       <div
         ref={scrollContainerRef}
-        className="w-full space-y-3.5 overflow-y-auto overflow-x-hidden max-h-[420px] custom-scrollbar pl-4 sm:pl-6 pr-4 py-3 scroll-smooth"
+        style={{
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+        }}
+        className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[430px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-36 pb-52"
       >
         {lyricsToDisplay.map((line, idx) => {
           const isPast = activeIndex > idx;
@@ -110,16 +115,16 @@ export default function LyricsBooklet({
 
           return (
             <motion.div
+              id={`lyric-line-${idx}`}
               key={`${idx}-${line.time}`}
-              ref={isActive ? activeLineRef : null}
               onClick={() => onSeek && onSeek(line.time)}
               whileHover={{ x: 4 }}
               className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug break-words ${
                 isActive
-                  ? 'text-[#37000A] text-3xl sm:text-4xl font-bold drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] opacity-100'
+                  ? 'text-[#37000A] text-3xl sm:text-4xl font-bold drop-shadow-[0_0_18px_rgba(255,255,255,0.95)] opacity-100 scale-[1.02] origin-left'
                   : isPast
-                  ? 'text-[#37000A]/75 text-2xl sm:text-3xl hover:text-[#37000A]'
-                  : 'text-[#92374D]/65 text-2xl sm:text-3xl opacity-75 hover:opacity-100 hover:text-[#92374D]'
+                  ? 'text-[#37000A]/70 text-2xl sm:text-3xl hover:text-[#37000A]'
+                  : 'text-[#92374D]/60 text-2xl sm:text-3xl opacity-70 hover:opacity-100 hover:text-[#92374D]'
               }`}
             >
               <span>{line.text}</span>
