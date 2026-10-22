@@ -20,10 +20,12 @@ export default function LyricsBooklet({
     let isCancelled = false;
 
     async function loadLyrics() {
-      // If track has embedded detailed timedLyrics, use them immediately
+      // If track has embedded detailed timedLyrics, use them directly (curated sync)
       if (track?.timedLyrics && track.timedLyrics.length > 2) {
         setDynamicLyrics(track.timedLyrics);
         setIsSynced(true);
+        setIsFetchingLyrics(false);
+        return;
       }
 
       if (!track?.title) return;
@@ -54,26 +56,32 @@ export default function LyricsBooklet({
     return () => {
       isCancelled = true;
     };
-  }, [track?.title, track?.artist, track?.duration]);
+  }, [track?.title, track?.artist, track?.duration, track?.timedLyrics]);
 
   const lyricsToDisplay = dynamicLyrics || track?.timedLyrics || [
     { time: 0, text: 'Cargando letras...' },
   ];
 
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const lastTrackTitleRef = useRef(track?.title);
 
   // Reset active line when track changes
   useEffect(() => {
     if (lastTrackTitleRef.current !== track?.title) {
       lastTrackTitleRef.current = track?.title;
-      setActiveIdx(0);
+      setActiveIdx(-1);
     }
   }, [track?.title]);
 
   // Determine active lyric index with anti-jitter hysteresis
   useEffect(() => {
     if (!lyricsToDisplay || lyricsToDisplay.length === 0) return;
+
+    // If current time is prior to the first lyric line onset, we are in the intro!
+    if (currentTime < lyricsToDisplay[0].time) {
+      setActiveIdx(-1);
+      return;
+    }
 
     let computedIndex = 0;
     for (let i = 0; i < lyricsToDisplay.length; i++) {
@@ -102,6 +110,14 @@ export default function LyricsBooklet({
 
   // Scroll down smoothly once playback reaches around line 4 or higher (activeIdx >= 3)
   useEffect(() => {
+    if (activeIdx < 0) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
     const timer = setTimeout(() => {
       const container = scrollContainerRef.current;
       const activeEl = document.getElementById(`lyric-line-${activeIdx}`);
@@ -141,6 +157,17 @@ export default function LyricsBooklet({
         ref={scrollContainerRef}
         className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[420px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-2 pb-56"
       >
+        {/* Intro indicator when music is in the instrumental section */}
+        {activeIdx === -1 && lyricsToDisplay[0]?.time > 4 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-[#92374D] font-dongle text-2xl tracking-wide py-1 select-none"
+          >
+            <Sparkles className="w-4 h-4 text-[#EEABC4] animate-pulse" />
+            <span>Intro musical...</span>
+          </motion.div>
+        )}
         {lyricsToDisplay.map((line, idx) => {
           const isPast = activeIdx > idx;
           const isActive = activeIdx === idx;

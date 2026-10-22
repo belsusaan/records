@@ -1,11 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Vinyl3D from './Vinyl3D';
 import TurntableArm from './TurntableArm';
 
-// Curved midline mathematically extracted from avance.png
-const AVANCE_CURVE_PATH =
-  'M 60 225 C 92 225, 92 220, 124 220 S 156 219, 188 219 S 220 214, 252 214 S 284 215, 316 215 S 348 213, 379 213 S 411 216, 443 216 S 475 223, 507 223 S 539 230, 571 230 S 603 226, 635 226 S 667 222, 699 222 S 731 219, 763 219 S 795 222, 827 222 S 859 226, 891 226 S 923 228, 954 228 S 986 229, 1018 229 S 1050 231, 1082 231 S 1114 235, 1146 235 S 1178 238, 1210 238';
+// Stroke bounds within avance.svg: spans from 3.8% to 95.5% horizontally
+const STROKE_START_PCT = 3.8;
+const STROKE_END_PCT = 95.5;
 
 export default function TurntableCard({
   activeSide,
@@ -25,35 +25,18 @@ export default function TurntableCard({
   className = '',
 }) {
   const progressBarRef = useRef(null);
-  const svgPathRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [knobPos, setKnobPos] = useState({ x: 60, y: 225 });
 
   const progressRatio = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
-
-  // Track position along the exact drawn curve in real-time
-  useEffect(() => {
-    if (svgPathRef.current) {
-      try {
-        const total = svgPathRef.current.getTotalLength();
-        const p = svgPathRef.current.getPointAtLength(progressRatio * total);
-        if (p && !Number.isNaN(p.x) && !Number.isNaN(p.y)) {
-          setKnobPos({ x: p.x, y: p.y });
-        }
-      } catch {
-        setKnobPos({ x: 60 + progressRatio * (1210 - 60), y: 225 });
-      }
-    }
-  }, [progressRatio]);
+  const currentPercent = STROKE_START_PCT + progressRatio * (STROKE_END_PCT - STROKE_START_PCT);
 
   // Click & Drag seeking along the bar
   const calculateSeekFraction = (clientX) => {
     if (!progressBarRef.current) return 0;
     const rect = progressBarRef.current.getBoundingClientRect();
     const clickX = clientX - rect.left;
-    const ratio = clickX / rect.width;
-    // Map between drawing bounds (approx 4.7% to 94.5%)
-    const normalized = (ratio - 0.047) / (0.945 - 0.047);
+    const ratio = (clickX / rect.width) * 100;
+    const normalized = (ratio - STROKE_START_PCT) / (STROKE_END_PCT - STROKE_START_PCT);
     return Math.max(0, Math.min(1, normalized));
   };
 
@@ -126,8 +109,8 @@ export default function TurntableCard({
           <div
             className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
             style={{
-              WebkitMaskImage: "url('/img/avance.svg')",
-              maskImage: "url('/img/avance.svg')",
+              WebkitMaskImage: "url('/img/avance.svg?v=3')",
+              maskImage: "url('/img/avance.svg?v=3')",
               WebkitMaskSize: '100% 100%',
               maskSize: '100% 100%',
               WebkitMaskRepeat: 'no-repeat',
@@ -140,17 +123,15 @@ export default function TurntableCard({
           <div
             className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
             style={{
-              clipPath:
-                progressRatio <= 0
-                  ? 'inset(0 100% 0 0)'
-                  : `inset(0 ${Math.max(0, (1 - (0.047 + progressRatio * (0.945 - 0.047))) * 100)}% 0 0)`,
+              clipPath: `inset(0 ${Math.max(0, 100 - currentPercent)}% 0 0)`,
+              transition: isDragging ? 'none' : 'clip-path 0.2s linear',
             }}
           >
             <div
               className="w-full h-full bg-[#EEABC4] drop-shadow-[0_0_12px_rgba(238,171,196,0.9)]"
               style={{
-                WebkitMaskImage: "url('/img/avance.svg')",
-                maskImage: "url('/img/avance.svg')",
+                WebkitMaskImage: "url('/img/avance.svg?v=3')",
+                maskImage: "url('/img/avance.svg?v=3')",
                 WebkitMaskSize: '100% 100%',
                 maskSize: '100% 100%',
                 WebkitMaskRepeat: 'no-repeat',
@@ -159,28 +140,38 @@ export default function TurntableCard({
             />
           </div>
 
-          {/* Hidden reference SVG to compute exact (knobPos.x, knobPos.y) along the natural wave */}
-          <svg
-            viewBox="0 0 1280 394"
-            preserveAspectRatio="none"
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-0 invisible"
-            aria-hidden="true"
-          >
-            <path ref={svgPathRef} d={AVANCE_CURVE_PATH} fill="none" />
-          </svg>
-
-          {/* Hand-painted Pink Heart Scrubber (pinkheart.png) */}
+          {/* Layer 3: Hand-painted Pink Heart Scrubber (pinkheart.png) with animated heartbeat */}
           <div
-            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-transform duration-75 select-none z-20 flex items-center justify-center"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none select-none z-20 flex items-center justify-center"
             style={{
-              left: `${(knobPos.x / 1280) * 100}%`,
-              top: `${(knobPos.y / 394) * 100}%`,
+              left: `${currentPercent}%`,
+              transition: isDragging ? 'none' : 'left 0.2s linear',
             }}
           >
-            <img
+            <motion.img
               src="/img/pinkheart.png"
               alt="Marcador de avance"
-              className={`h-9 sm:h-11 w-auto object-contain pointer-events-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] drop-shadow-[0_0_10px_rgba(255,117,151,0.7)] transition-transform duration-100 ${
+              animate={
+                isPlaying
+                  ? {
+                      scale: [1, 1.2, 0.95, 1.12, 1],
+                      rotate: [0, -3, 2, -1, 0],
+                    }
+                  : {
+                      scale: 1,
+                      rotate: 0,
+                    }
+              }
+              transition={
+                isPlaying
+                  ? {
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }
+                  : { duration: 0.2 }
+              }
+              className={`h-9 sm:h-11 w-auto object-contain pointer-events-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] drop-shadow-[0_0_12px_rgba(238,171,196,0.9)] select-none transition-transform duration-100 ${
                 isDragging ? 'scale-125 brightness-110' : 'group-hover:scale-115'
               }`}
               draggable={false}

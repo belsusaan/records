@@ -34,9 +34,9 @@ export default function CustomControls({
   const progressBarRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Painted line on avance.png: stretches from 4% to 96%
-  const minPct = 4;
-  const maxPct = 96;
+  // Painted line on avance.svg: stretches from 3.8% to 95.5%
+  const minPct = 3.8;
+  const maxPct = 95.5;
   const progressRatio = duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
   const sliderPositionPct = minPct + progressRatio * (maxPct - minPct);
 
@@ -97,8 +97,8 @@ export default function CustomControls({
           <div
             className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
             style={{
-              WebkitMaskImage: "url('/img/avance.svg')",
-              maskImage: "url('/img/avance.svg')",
+              WebkitMaskImage: "url('/img/avance.svg?v=3')",
+              maskImage: "url('/img/avance.svg?v=3')",
               WebkitMaskSize: '100% 100%',
               maskSize: '100% 100%',
               WebkitMaskRepeat: 'no-repeat',
@@ -111,17 +111,15 @@ export default function CustomControls({
           <div
             className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
             style={{
-              clipPath:
-                progressRatio <= 0
-                  ? 'inset(0 100% 0 0)'
-                  : `inset(0 ${Math.max(0, (1 - (0.04 + progressRatio * (0.96 - 0.04))) * 100)}% 0 0)`,
+              clipPath: `inset(0 ${Math.max(0, 100 - sliderPositionPct)}% 0 0)`,
+              transition: isDragging ? 'none' : 'clip-path 0.2s linear',
             }}
           >
             <div
               className="w-full h-full bg-[#EEABC4] drop-shadow-[0_0_12px_rgba(238,171,196,0.9)]"
               style={{
-                WebkitMaskImage: "url('/img/avance.svg')",
-                maskImage: "url('/img/avance.svg')",
+                WebkitMaskImage: "url('/img/avance.svg?v=3')",
+                maskImage: "url('/img/avance.svg?v=3')",
                 WebkitMaskSize: '100% 100%',
                 maskSize: '100% 100%',
                 WebkitMaskRepeat: 'no-repeat',
@@ -130,15 +128,40 @@ export default function CustomControls({
             />
           </div>
 
-          {/* Slider Pink Heart */}
+          {/* Slider Pink Heart with beating pulse */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-transform duration-75 pointer-events-none z-10 flex items-center justify-center"
-            style={{ left: `${sliderPositionPct}%` }}
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10 flex items-center justify-center select-none"
+            style={{
+              left: `${sliderPositionPct}%`,
+              transition: isDragging ? 'none' : 'left 0.2s linear',
+            }}
           >
-            <img
+            <motion.img
               src="/img/pinkheart.png"
               alt="Marcador de avance"
-              className="h-8 w-auto object-contain filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] drop-shadow-[0_0_8px_rgba(255,117,151,0.6)] group-hover:scale-125 transition-transform"
+              animate={
+                isPlaying
+                  ? {
+                      scale: [1, 1.2, 0.95, 1.12, 1],
+                      rotate: [0, -3, 2, -1, 0],
+                    }
+                  : {
+                      scale: 1,
+                      rotate: 0,
+                    }
+              }
+              transition={
+                isPlaying
+                  ? {
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }
+                  : { duration: 0.2 }
+              }
+              className={`h-8 w-auto object-contain filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] drop-shadow-[0_0_10px_rgba(238,171,196,0.9)] transition-transform select-none ${
+                isDragging ? 'scale-125 brightness-110' : 'group-hover:scale-115'
+              }`}
               draggable={false}
             />
           </div>

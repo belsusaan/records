@@ -309,14 +309,14 @@ export function useAudio() {
     if (isPlaying && isUsingProceduralFallback) {
       timerRef.current = setInterval(() => {
         setCurrentTime((prev) => {
-          const next = prev + 1;
+          const next = prev + 0.1;
           if (next >= duration) {
             handleTrackEnd();
             return 0;
           }
           return next;
         });
-      }, 1000);
+      }, 100);
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
