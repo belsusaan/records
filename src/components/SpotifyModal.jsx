@@ -62,7 +62,7 @@ export default function SpotifyModal({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-md rounded-3xl bg-[#1C3041] border-2 border-[#92374D]/40 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(146,55,77,0.2)] p-6 sm:p-7 text-[#F4F1DE]"
+        className="relative w-full max-w-md rounded-3xl bg-[#92374D] border-2 border-[#37000A]/40 shadow-[0_20px_50px_rgba(55,0,10,0.6),0_0_40px_rgba(146,55,77,0.25)] p-6 sm:p-7 text-[#F4F1DE]"
       >
         <button
           type="button"
@@ -159,7 +159,7 @@ export default function SpotifyModal({
               </button>
               <button
                 type="submit"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-2xl text-2xl font-bold bg-[#1db954] text-[#1C3041] hover:bg-[#1ed760] transition-colors cursor-pointer shadow-lg"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-2xl text-2xl font-bold bg-[#1db954] text-[#37000A] hover:bg-[#1ed760] transition-colors cursor-pointer shadow-lg"
               >
                 <Key className="w-4 h-4" /> Conectar Spotify
               </button>

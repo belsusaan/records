@@ -99,7 +99,7 @@ export default function App() {
       {isGiftOpened && (
         <main className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-center my-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center justify-center w-full">
-            {/* ================= 1. IZQUIERDA: TARJETA DEL TOCADISCOS (#1C3041) ================= */}
+            {/* ================= 1. IZQUIERDA: TARJETA DEL TOCADISCOS (#92374D) ================= */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -147,7 +147,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => setShowSpotifyModal(true)}
-          className="fixed top-4 right-4 z-40 flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#1C3041]/90 hover:bg-[#1C3041] border border-[#92374D]/50 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
+          className="fixed top-4 right-4 z-40 flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#92374D]/90 hover:bg-[#92374D] border border-[#37000A]/40 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
           title="Cuenta de Spotify conectada"
         >
           <span className="w-2.5 h-2.5 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />

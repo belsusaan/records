@@ -60,7 +60,7 @@ export default function TurntableCard({
 
   return (
     <div
-      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#1C3041] border-2 border-[#92374D]/35 shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_40px_rgba(146,55,77,0.15)] select-none ${className}`}
+      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#92374D] border-2 border-[#37000A]/35 shadow-[0_25px_60px_rgba(55,0,10,0.45),0_0_40px_rgba(146,55,77,0.3)] select-none ${className}`}
     >
       {/* ================= 1. VINYL RECORD WITH REACTBITS FLIPCARD & HAND-PAINTED TONEARM ================= */}
       <div className="relative w-full max-w-[310px] sm:max-w-[340px] aspect-square flex items-center justify-center mt-1 mb-2">
@@ -123,7 +123,7 @@ export default function TurntableCard({
             style={{ left: `${sliderPositionPct}%` }}
           >
             <div className="relative group-hover:scale-125 transition-transform">
-              <div className="w-3.5 h-3.5 rounded-full bg-[#F4F1DE] shadow-[0_0_8px_rgba(244,241,222,0.9),0_2px_4px_rgba(0,0,0,0.5)] border border-[#1C3041] flex items-center justify-center">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#F4F1DE] shadow-[0_0_8px_rgba(244,241,222,0.9),0_2px_4px_rgba(0,0,0,0.5)] border border-[#37000A] flex items-center justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#92374D]" />
               </div>
             </div>

@@ -71,26 +71,26 @@ export default function SpotifyGate({ onAuthSuccess }) {
         }}
       />
 
-      {/* ── Content Card (#1C3041 Deep Space Blue Base) ── */}
+      {/* ── Content Card (#92374D Vintage Berry Base) ── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-md rounded-3xl bg-[#1C3041]/95 border-2 border-[#92374D]/35 p-7 sm:p-9 shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_50px_rgba(146,55,77,0.15)] text-center backdrop-blur-xl"
+        className="relative z-10 w-full max-w-md rounded-3xl bg-[#92374D]/95 border-2 border-[#37000A]/40 p-7 sm:p-9 shadow-[0_25px_60px_rgba(55,0,10,0.5),0_0_50px_rgba(146,55,77,0.25)] text-center backdrop-blur-xl"
       >
         {/* Animated Vinyl Icon */}
         <div className="relative mx-auto mb-5 w-24 h-24 flex items-center justify-center">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
-            className="w-full h-full rounded-full bg-gradient-to-tr from-[#111] via-[#222] to-[#0a0a0a] border-2 border-[#92374D]/50 shadow-[0_0_25px_rgba(146,55,77,0.3)] flex items-center justify-center p-2"
+            className="w-full h-full rounded-full bg-gradient-to-tr from-[#111] via-[#222] to-[#0a0a0a] border-2 border-[#37000A]/50 shadow-[0_0_25px_rgba(146,55,77,0.3)] flex items-center justify-center p-2"
           >
-            <div className="w-full h-full rounded-full border border-[#F4F1DE]/15 flex items-center justify-center bg-[radial-gradient(circle,#92374D_0%,#37000A_70%,#1C3041_100%)] shadow-inner">
+            <div className="w-full h-full rounded-full border border-[#F4F1DE]/15 flex items-center justify-center bg-[radial-gradient(circle,#EEABC4_0%,#92374D_70%,#37000A_100%)] shadow-inner">
               <Disc3 className="w-10 h-10 text-[#F4F1DE]/90 animate-pulse" />
             </div>
           </motion.div>
           {/* Small music note badge */}
-          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#92374D] text-[#F4F1DE] flex items-center justify-center shadow-lg border-2 border-[#1C3041]">
+          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#37000A] text-[#F4F1DE] flex items-center justify-center shadow-lg border-2 border-[#92374D]">
             <Music2 className="w-4 h-4 fill-current text-[#EEABC4]" />
           </div>
         </div>
@@ -119,17 +119,17 @@ export default function SpotifyGate({ onAuthSuccess }) {
           </div>
         )}
 
-        {/* Big Official Spotify Connect CTA (#1db954 + #1C3041) */}
+        {/* Big Official Spotify Connect CTA (#1db954 + #37000A) */}
         <motion.button
           whileHover={{ scale: 1.03, boxShadow: '0 0 25px rgba(29,185,84,0.45)' }}
           whileTap={{ scale: 0.97 }}
           onClick={handleLogin}
           disabled={loading}
           type="button"
-          className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-2xl bg-[#1db954] hover:bg-[#1ed760] text-[#1C3041] font-dongle text-3xl font-bold tracking-wide transition-all duration-200 shadow-[0_10px_25px_rgba(29,185,84,0.35)] cursor-pointer group leading-none"
+          className="w-full flex items-center justify-center gap-3 py-3 px-6 rounded-2xl bg-[#1db954] hover:bg-[#1ed760] text-[#37000A] font-dongle text-3xl font-bold tracking-wide transition-all duration-200 shadow-[0_10px_25px_rgba(29,185,84,0.35)] cursor-pointer group leading-none"
         >
           {loading ? (
-            <div className="w-6 h-6 border-2 border-[#1C3041] border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#37000A] border-t-transparent rounded-full animate-spin" />
           ) : (
             <>
               {/* Spotify Official SVG Icon */}
@@ -184,7 +184,7 @@ export default function SpotifyGate({ onAuthSuccess }) {
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   placeholder="ce48e7726f0f420faf794d16da8bcbf9"
-                  className="w-full bg-[#1C3041] border border-[#92374D]/50 focus:border-[#EEABC4] rounded-lg px-3 py-1.5 text-[#F4F1DE] font-dongle text-xl focus:outline-none"
+                  className="w-full bg-[#37000A] border border-[#92374D]/50 focus:border-[#EEABC4] rounded-lg px-3 py-1.5 text-[#F4F1DE] font-dongle text-xl focus:outline-none"
                 />
               </div>
 
@@ -192,7 +192,7 @@ export default function SpotifyGate({ onAuthSuccess }) {
                 <label className="block text-lg uppercase tracking-wider text-[#EEABC4] font-dongle mb-0.5 leading-none">
                   Redirect URI registrado en Spotify Developer:
                 </label>
-                <div className="p-2 rounded bg-[#1C3041] border border-[#92374D]/40 text-lg text-[#F4F1DE]/90 font-mono break-all select-all">
+                <div className="p-2 rounded bg-[#37000A] border border-[#92374D]/40 text-lg text-[#F4F1DE]/90 font-mono break-all select-all">
                   {currentRedirectUri}
                 </div>
               </div>
