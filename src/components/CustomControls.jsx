@@ -244,26 +244,28 @@ export default function CustomControls({
           />
         </button>
 
-        {/* Loop Button */}
+        {/* Loop / Repeat Button (Only Repeat Song) */}
         <button
           type="button"
           onClick={onToggleLoop}
           className={`relative p-2 rounded-xl transition-all duration-200 cursor-pointer group active:scale-90 ${
             isLooping
-              ? 'bg-[#401217]/70 shadow-[0_0_15px_rgba(143,29,44,0.6)] border border-[#b82d3e]/50'
+              ? 'bg-[#401217]/70 shadow-[0_0_15px_rgba(143,29,44,0.6)] border border-[#b82d3e]/50 opacity-100'
               : 'hover:bg-[#201518]/50 opacity-70 hover:opacity-100'
           }`}
-          title={isLooping ? 'Repetir canción activado' : 'Activar repetición'}
-          aria-label="Repetición"
+          title={isLooping ? 'Repetir canción activado (1)' : 'Activar repetición de canción'}
+          aria-label={isLooping ? 'Repetir canción activado' : 'Activar repetición de canción'}
         >
           <img
             src="/img/loop.png"
-            alt="Loop"
+            alt="Repetir canción"
             className="w-7 h-7 sm:w-9 sm:h-9 object-contain drop-shadow"
             draggable={false}
           />
           {isLooping && (
-            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#edd19c] shadow-[0_0_4px_#edd19c]" />
+            <span className="absolute top-1 right-1 flex items-center justify-center min-w-[12px] h-[12px] px-0.5 rounded-full bg-[#EEABC4] text-[#37000A] text-[8px] font-bold font-mono leading-none shadow-[0_0_4px_#EEABC4]">
+              1
+            </span>
           )}
         </button>
       </div>

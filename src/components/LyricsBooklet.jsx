@@ -174,7 +174,7 @@ export default function LyricsBooklet({
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-2 text-[#92374D] font-dongle text-2xl tracking-wide py-1 select-none"
           >
-            <span>Intro musical...</span>
+            <span>...</span>
           </motion.div>
         )}
         {lyricsToDisplay.map((line, idx) => {

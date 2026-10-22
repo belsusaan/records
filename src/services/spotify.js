@@ -326,8 +326,9 @@ export async function spotifySetShuffle(state) {
 }
 
 export async function spotifySetRepeat(state) {
-  // state: 'track', 'context', 'off'
-  const repeatMode = state ? 'track' : 'off';
+  // state: boolean | 'track' | 'off'
+  // ONLY 'track' (repeat single song) or 'off' (no repeat). Never 'context' (playlist).
+  const repeatMode = state === true || state === 'track' ? 'track' : 'off';
   return await spotifyFetch(`/me/player/repeat?state=${repeatMode}`, 'PUT');
 }
 

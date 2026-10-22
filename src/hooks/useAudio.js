@@ -92,6 +92,16 @@ export function useAudio() {
     return () => clearInterval(ticker);
   }, [isPlaying, isSpotifyLive, duration]);
 
+  // Ensure Spotify starts with shuffle and repeat deactivated (off) by default
+  const hasEnforcedInitialModesRef = useRef(false);
+  useEffect(() => {
+    if (isSpotifyAuthenticated() && !hasEnforcedInitialModesRef.current) {
+      hasEnforcedInitialModesRef.current = true;
+      spotifySetShuffle(false).catch(() => {});
+      spotifySetRepeat('off').catch(() => {});
+    }
+  }, []);
+
   // Poll Spotify playback state when authenticated
   useEffect(() => {
     if (!isSpotifyAuthenticated()) {
@@ -346,9 +356,14 @@ export function useAudio() {
 
     if (isSpotifyAuthenticated()) {
       const targetUri = forceTrackUri || currentTrack?.uri;
-      spotifyStartGiftPlaylist(targetUri).catch((err) =>
-        console.log('Spotify start playlist notice:', err)
-      );
+      spotifyStartGiftPlaylist(targetUri)
+        .then(() => {
+          spotifySetShuffle(isShuffle).catch(() => {});
+          spotifySetRepeat(isLooping ? 'track' : 'off').catch(() => {});
+        })
+        .catch((err) =>
+          console.log('Spotify start playlist notice:', err)
+        );
     }
 
     const audio = audioRef.current;
@@ -498,15 +513,24 @@ export function useAudio() {
 
   const handleTrackEnd = useCallback(() => {
     if (isLooping) {
-      if (audioRef.current) {
+      if (audioRef.current && audioRef.current.src && !isUsingProceduralFallback) {
         audioRef.current.currentTime = 0;
-        audioRef.current.play();
+        audioRef.current.play().catch(() => {});
+      } else if (isSpotifyAuthenticated()) {
+        spotifySeek(0).catch(() => {});
+      } else {
+        startProceduralMusic(currentTrack?.synthPreset, effectiveVolume);
       }
       setCurrentTime(0);
+      spotifyAnchorRef.current = {
+        spotifyTime: 0,
+        clientTimestamp: performance.now(),
+        isPlaying: true,
+      };
     } else {
       nextTrack();
     }
-  }, [isLooping, nextTrack]);
+  }, [isLooping, nextTrack, isUsingProceduralFallback, currentTrack, effectiveVolume]);
 
   const seek = useCallback(
     (fractionOrSeconds) => {
@@ -591,7 +615,7 @@ export function useAudio() {
     setIsLooping((prev) => {
       const next = !prev;
       if (isSpotifyAuthenticated()) {
-        spotifySetRepeat(next).catch(() => {});
+        spotifySetRepeat(next ? 'track' : 'off').catch(() => {});
       }
       return next;
     });

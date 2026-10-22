@@ -187,9 +187,12 @@ export default function TurntableCard({
           type="button"
           onClick={onToggleShuffle}
           className={`relative p-1 transition-all duration-150 cursor-pointer active:scale-90 ${
-            isShuffle ? 'scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]' : 'hover:scale-105 opacity-95 hover:opacity-100'
+            isShuffle
+              ? 'scale-110 drop-shadow-[0_0_12px_rgba(238,171,196,0.95)] opacity-100'
+              : 'hover:scale-105 opacity-70 hover:opacity-100'
           }`}
           title={isShuffle ? 'Modo aleatorio activado' : 'Activar modo aleatorio'}
+          aria-label={isShuffle ? 'Modo aleatorio activado' : 'Activar modo aleatorio'}
         >
           <img
             src="/img/shuffle.png"
@@ -197,14 +200,18 @@ export default function TurntableCard({
             className="w-9 h-9 sm:w-11 sm:h-11 object-contain drop-shadow"
             draggable={false}
           />
+          {isShuffle && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#EEABC4] shadow-[0_0_6px_#EEABC4]" />
+          )}
         </button>
 
         {/* Back Button */}
         <button
           type="button"
           onClick={onPrev}
-          className="relative p-1 transition-all duration-150 cursor-pointer hover:scale-105 active:scale-90"
+          className="relative p-1 transition-all duration-150 cursor-pointer hover:scale-105 active:scale-90 opacity-90 hover:opacity-100"
           title="Pista anterior"
+          aria-label="Pista anterior"
         >
           <img
             src="/img/back.png"
@@ -222,6 +229,7 @@ export default function TurntableCard({
           onClick={onTogglePlay}
           className="relative p-1 cursor-pointer focus:outline-none"
           title={isPlaying ? 'Pausar' : 'Reproducir'}
+          aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
         >
           <img
             src={isPlaying ? '/img/pause.png' : '/img/play.png'}
@@ -235,8 +243,9 @@ export default function TurntableCard({
         <button
           type="button"
           onClick={onNext}
-          className="relative p-1 transition-all duration-150 cursor-pointer hover:scale-105 active:scale-90"
+          className="relative p-1 transition-all duration-150 cursor-pointer hover:scale-105 active:scale-90 opacity-90 hover:opacity-100"
           title="Pista siguiente"
+          aria-label="Pista siguiente"
         >
           <img
             src="/img/next.png"
@@ -246,21 +255,29 @@ export default function TurntableCard({
           />
         </button>
 
-        {/* Loop Button */}
+        {/* Loop / Repeat Button (Only Repeat Song) */}
         <button
           type="button"
           onClick={onToggleLoop}
           className={`relative p-1 transition-all duration-150 cursor-pointer active:scale-90 ${
-            isLooping ? 'scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.9)]' : 'hover:scale-105 opacity-95 hover:opacity-100'
+            isLooping
+              ? 'scale-110 drop-shadow-[0_0_12px_rgba(238,171,196,0.95)] opacity-100'
+              : 'hover:scale-105 opacity-70 hover:opacity-100'
           }`}
-          title={isLooping ? 'Repetir activado' : 'Activar repetición'}
+          title={isLooping ? 'Repetir canción activado (1)' : 'Activar repetición de canción'}
+          aria-label={isLooping ? 'Repetir canción activado' : 'Activar repetición de canción'}
         >
           <img
             src="/img/loop.png"
-            alt="Loop"
+            alt="Repetir canción"
             className="w-9 h-9 sm:w-11 sm:h-11 object-contain drop-shadow"
             draggable={false}
           />
+          {isLooping && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[13px] h-[13px] px-0.5 rounded-full bg-[#EEABC4] text-[#37000A] text-[9px] font-bold font-mono leading-none shadow-[0_0_6px_#EEABC4]">
+              1
+            </span>
+          )}
         </button>
       </div>
     </div>
