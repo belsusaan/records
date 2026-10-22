@@ -95,21 +95,10 @@ export default function SpotifyGate({ onAuthSuccess }) {
           </div>
         </div>
 
-        {/* Header Tag */}
-        <div className="inline-flex items-center gap-1.5 px-3.5 py-0.5 rounded-full bg-[#37000A]/60 border border-[#92374D]/60 text-[#EEABC4] text-xl font-dongle mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#EEABC4]" />
-          <span className="leading-none">Experiencia Musical en Vinilo</span>
-        </div>
-
         {/* Title & Subtitle */}
         <h1 className="text-4xl sm:text-5xl text-[#F4F1DE] font-butterfly tracking-wide mb-1 drop-shadow-sm leading-tight">
           Conéctate a Spotify
         </h1>
-
-        <p className="text-2xl sm:text-3xl text-[#EEABC4]/90 leading-tight font-dongle mb-5">
-          Para abrir la carta y reproducir tu playlist con{' '}
-          <strong className="text-[#F4F1DE] font-bold">letras sincronizadas</strong>, inicia sesión con tu cuenta de Spotify.
-        </p>
 
         {/* Error message if any */}
         {errorMsg && (
@@ -140,31 +129,6 @@ export default function SpotifyGate({ onAuthSuccess }) {
             </>
           )}
         </motion.button>
-
-        {/* Feature Highlights Pills */}
-        <div className="mt-5 pt-4 border-t border-[#92374D]/25 flex items-center justify-center gap-4 text-xl font-dongle text-[#F4F1DE]/80">
-          <span className="flex items-center gap-1.5 leading-none">
-            <ShieldCheck className="w-4 h-4 text-[#1db954]" />
-            Spotify Oficial
-          </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#EEABC4]/40" />
-          <span className="flex items-center gap-1.5 leading-none">
-            <Sparkles className="w-4 h-4 text-[#EEABC4]" />
-            Letras Sincronizadas
-          </span>
-        </div>
-
-        {/* Config Toggle button */}
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setShowConfig(!showConfig)}
-            className="text-lg font-dongle text-[#EEABC4]/70 hover:text-[#F4F1DE] transition-colors inline-flex items-center gap-1 cursor-pointer leading-none"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>{showConfig ? 'Ocultar ajustes' : 'Configurar Client ID / Redirect URI'}</span>
-          </button>
-        </div>
 
         {/* Optional Collapsible Config Panel */}
         <AnimatePresence>
