@@ -62,23 +62,31 @@ export function useAudio() {
     let lastTime = performance.now();
     const ticker = setInterval(() => {
       const now = performance.now();
-
-      // If Spotify is live, calculate exactly from the calibrated anchor to prevent drift
-      if (isSpotifyLive && spotifyAnchorRef.current.isPlaying) {
-        const anchor = spotifyAnchorRef.current;
-        const elapsed = (now - anchor.clientTimestamp) / 1000;
-        const currentEst = anchor.spotifyTime + elapsed;
-        setCurrentTime(currentEst);
-      } else {
-        const deltaSec = (now - lastTime) / 1000;
-        setCurrentTime((prev) => {
-          if (duration > 0 && prev >= duration) {
-            return prev;
-          }
-          return prev + deltaSec;
-        });
-      }
+      const deltaSec = (now - lastTime) / 1000;
       lastTime = now;
+
+      setCurrentTime((prev) => {
+        if (duration > 0 && prev >= duration) {
+          return prev;
+        }
+
+        // If Spotify is live, calculate from calibrated anchor with monotonic forward guarantee
+        if (isSpotifyLive && spotifyAnchorRef.current.isPlaying) {
+          const anchor = spotifyAnchorRef.current;
+          const elapsed = (now - anchor.clientTimestamp) / 1000;
+          const currentEst = anchor.spotifyTime + elapsed;
+
+          // Prevent backward rubberbanding:
+          // If Spotify's packet was slightly delayed and currentEst is behind client's current time (< 3s diff),
+          // DO NOT jump backwards! Advance smoothly forward at normal 1x speed:
+          if (currentEst < prev && (prev - currentEst) < 3.0) {
+            return prev + deltaSec;
+          }
+          return currentEst;
+        } else {
+          return prev + deltaSec;
+        }
+      });
     }, 100);
 
     return () => clearInterval(ticker);
@@ -184,9 +192,17 @@ export function useAudio() {
               prevAnchor.spotifyTime + (arrivalTime - prevAnchor.clientTimestamp) / 1000;
             const diff = exactSpotifyProgress - prevEstimated;
 
-            // If jitter is small (< 0.7s), softly absorb it by 20% so there is zero visible jump
-            if (Math.abs(diff) < 0.7) {
-              calibratedProgress = prevEstimated + diff * 0.2;
+            // Spotify API progress packets are often delayed by 0.3s - 1.5s due to server latency.
+            // If the packet is slightly behind our estimated playback time (diff < 0),
+            // NEVER pull the anchor backwards! Keep it at prevEstimated:
+            if (diff < 0 && Math.abs(diff) < 3.0) {
+              calibratedProgress = prevEstimated;
+            } else if (diff > 0 && diff < 1.0) {
+              // Slightly ahead: softly catch up forward
+              calibratedProgress = prevEstimated + diff * 0.25;
+            } else {
+              // Large seek (> 3s backward/forward) or track change: sync directly
+              calibratedProgress = exactSpotifyProgress;
             }
           }
 
@@ -505,11 +521,16 @@ export function useAudio() {
       }
 
       setCurrentTime(targetSec);
+      spotifyAnchorRef.current = {
+        spotifyTime: targetSec,
+        clientTimestamp: performance.now(),
+        isPlaying: isPlaying,
+      };
       if (audioRef.current && !isUsingProceduralFallback) {
         audioRef.current.currentTime = targetSec;
       }
     },
-    [duration, isUsingProceduralFallback]
+    [duration, isUsingProceduralFallback, isPlaying]
   );
 
   const flipSide = useCallback(() => {

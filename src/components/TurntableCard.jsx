@@ -123,14 +123,20 @@ export default function TurntableCard({
           aria-valuenow={currentTime}
         >
           {/* Layer 1: Base avance.svg (Unplayed groove in subtle dark tone) */}
-          <img
-            src="/img/avance.svg"
-            alt="Barra de avance base"
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none opacity-30 brightness-75 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"
-            draggable={false}
+          <div
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+            style={{
+              WebkitMaskImage: "url('/img/avance.svg')",
+              maskImage: "url('/img/avance.svg')",
+              WebkitMaskSize: '100% 100%',
+              maskSize: '100% 100%',
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+              backgroundColor: '#40000B',
+            }}
           />
 
-          {/* Layer 2: Dynamic Played Progress avance.svg with vivid changed color */}
+          {/* Layer 2: Dynamic Played Progress avance.svg in EXACT background pink (#EEABC4) */}
           <div
             className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
             style={{
@@ -140,15 +146,16 @@ export default function TurntableCard({
                   : `inset(0 ${Math.max(0, (1 - (0.047 + progressRatio * (0.945 - 0.047))) * 100)}% 0 0)`,
             }}
           >
-            <img
-              src="/img/avance.svg"
-              alt="Avance de la canción"
-              className="w-full h-full object-fill pointer-events-none"
+            <div
+              className="w-full h-full bg-[#EEABC4] drop-shadow-[0_0_12px_rgba(238,171,196,0.9)]"
               style={{
-                filter:
-                  'brightness(3.2) saturate(1.8) hue-rotate(325deg) drop-shadow(0 0 8px rgba(244, 241, 222, 0.8))',
+                WebkitMaskImage: "url('/img/avance.svg')",
+                maskImage: "url('/img/avance.svg')",
+                WebkitMaskSize: '100% 100%',
+                maskSize: '100% 100%',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
               }}
-              draggable={false}
             />
           </div>
 
