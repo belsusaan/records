@@ -87,49 +87,51 @@ export default function App() {
       />
 
       {/* ================= PANTALLA 2: TOCADISCOS Y LETRAS ================= */}
-      <main className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-center my-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center justify-center w-full">
-          {/* ================= 1. IZQUIERDA: TARJETA AZUL DEL TOCADISCOS ================= */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col items-center justify-center lg:col-span-7"
-          >
-            <TurntableCard
-              activeSide={activeSide}
-              isPlaying={isPlaying}
-              currentTrack={currentTrack}
-              currentTime={currentTime}
-              duration={duration}
-              onSeek={seek}
-              onTogglePlay={togglePlay}
-              onNext={nextTrack}
-              onPrev={prevTrack}
-              isLooping={isLooping}
-              onToggleLoop={toggleLoop}
-              isShuffle={isShuffle}
-              onToggleShuffle={toggleShuffle}
-              onFlipSide={flipSide}
-            />
-          </motion.div>
+      {isGiftOpened && (
+        <main className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-center my-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center justify-center w-full">
+            {/* ================= 1. IZQUIERDA: TARJETA AZUL DEL TOCADISCOS ================= */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col items-center justify-center lg:col-span-7"
+            >
+              <TurntableCard
+                activeSide={activeSide}
+                isPlaying={isPlaying}
+                currentTrack={currentTrack}
+                currentTime={currentTime}
+                duration={duration}
+                onSeek={seek}
+                onTogglePlay={togglePlay}
+                onNext={nextTrack}
+                onPrev={prevTrack}
+                isLooping={isLooping}
+                onToggleLoop={toggleLoop}
+                isShuffle={isShuffle}
+                onToggleShuffle={toggleShuffle}
+                onFlipSide={flipSide}
+              />
+            </motion.div>
 
-          {/* ================= 2. DERECHA: PANEL DE LETRAS SINCRONIZADAS ================= */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="w-full flex justify-center lg:justify-start lg:col-span-5"
-          >
-            <LyricsBooklet
-              track={currentTrack}
-              currentTime={currentTime}
-              onSeek={seek}
-              className="w-full"
-            />
-          </motion.div>
-        </div>
-      </main>
+            {/* ================= 2. DERECHA: PANEL DE LETRAS SINCRONIZADAS ================= */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="w-full flex justify-center lg:justify-start lg:col-span-5"
+            >
+              <LyricsBooklet
+                track={currentTrack}
+                currentTime={currentTime}
+                onSeek={seek}
+                className="w-full"
+              />
+            </motion.div>
+          </div>
+        </main>
+      )}
 
       {/* ================= SPOTIFY ACCOUNT PILL (SOLO EN EL REPRODUCTOR) ================= */}
       {isGiftOpened && (

@@ -34,8 +34,8 @@ export default function WordImageIntro({ isOpen, onOpen }) {
       {!isOpen && (
         <motion.div
           key="letter-intro"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.6 } }}
+          initial={false}
+          animate={{ opacity: 1 }}
           exit={{
             opacity: 0,
             scale: 0.95,
@@ -69,9 +69,8 @@ export default function WordImageIntro({ isOpen, onOpen }) {
           {/* THE PAPER CRUMPLE — full WebGL interactive */}
           {/* ────────────────────────────────────────── */}
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.93 }}
+            initial={false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.15, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
             className="relative w-full flex items-center justify-center"
             style={{ maxWidth: 700 }}
           >
