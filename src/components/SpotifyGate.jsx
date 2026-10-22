@@ -76,7 +76,7 @@ export default function SpotifyGate({ onAuthSuccess }) {
         initial={{ opacity: 0, scale: 0.94, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-md rounded-3xl bg-[#92374D]/95 border-2 border-[#37000A]/40 p-7 sm:p-9 shadow-[0_25px_60px_rgba(55,0,10,0.5),0_0_50px_rgba(146,55,77,0.25)] text-center backdrop-blur-xl"
+        className="relative z-10 w-full max-w-md rounded-3xl bg-[#92374D]/95 p-7 sm:p-9 shadow-[0_25px_60px_rgba(55,0,10,0.5),0_0_50px_rgba(146,55,77,0.25)] text-center backdrop-blur-xl"
       >
         {/* Animated Vinyl Icon */}
         <div className="relative mx-auto mb-5 w-24 h-24 flex items-center justify-center">

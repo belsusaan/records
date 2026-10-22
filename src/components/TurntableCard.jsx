@@ -110,7 +110,7 @@ export default function TurntableCard({
         </p>
       </div>
 
-      {/* ================= 3. AVANCE.PNG PROGRESS BAR WITH EXACT CURVE TRACING ================= */}
+      {/* ================= 3. AVANCE.SVG PROGRESS BAR WITH COLOR CHANGE & PINKHEART ================= */}
       <div className="w-full px-1 my-1">
         <div
           ref={progressBarRef}
@@ -122,57 +122,63 @@ export default function TurntableCard({
           aria-valuemax={duration}
           aria-valuenow={currentTime}
         >
-          {/* Hand-painted avance.png brush stroke */}
+          {/* Layer 1: Base avance.svg (Unplayed groove in subtle dark tone) */}
           <img
-            src="/img/avance.png"
-            alt="Barra de avance"
-            className="w-full h-full object-fill pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+            src="/img/avance.svg"
+            alt="Barra de avance base"
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none opacity-30 brightness-75 drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"
             draggable={false}
           />
 
-          {/* SVG Following the exact curve of the hand-painted avance.png stroke */}
+          {/* Layer 2: Dynamic Played Progress avance.svg with vivid changed color */}
+          <div
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
+            style={{
+              clipPath:
+                progressRatio <= 0
+                  ? 'inset(0 100% 0 0)'
+                  : `inset(0 ${Math.max(0, (1 - (0.047 + progressRatio * (0.945 - 0.047))) * 100)}% 0 0)`,
+            }}
+          >
+            <img
+              src="/img/avance.svg"
+              alt="Avance de la canción"
+              className="w-full h-full object-fill pointer-events-none"
+              style={{
+                filter:
+                  'brightness(3.2) saturate(1.8) hue-rotate(325deg) drop-shadow(0 0 8px rgba(244, 241, 222, 0.8))',
+              }}
+              draggable={false}
+            />
+          </div>
+
+          {/* Hidden reference SVG to compute exact (knobPos.x, knobPos.y) along the natural wave */}
           <svg
             viewBox="0 0 1280 394"
             preserveAspectRatio="none"
-            className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-0 invisible"
+            aria-hidden="true"
           >
-            <defs>
-              <filter id="brush-glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#F4F1DE" floodOpacity="0.85" />
-              </filter>
-            </defs>
-
-            {/* Glowing White Line following the exact drawing curve */}
-            <path
-              ref={svgPathRef}
-              d={AVANCE_CURVE_PATH}
-              fill="none"
-              stroke="#F4F1DE"
-              strokeWidth="13"
-              strokeLinecap="round"
-              pathLength="1000"
-              strokeDasharray="1000"
-              strokeDashoffset={1000 * (1 - progressRatio)}
-              filter="url(#brush-glow)"
-            />
-
-            {/* Slider Stylus Head perfectly glides along the curve */}
-            <g
-              transform={`translate(${knobPos.x}, ${knobPos.y})`}
-              className="transition-transform duration-75 group-hover:scale-110"
-            >
-              {/* Outer white eggshell circle */}
-              <circle
-                r="36"
-                fill="#F4F1DE"
-                stroke="#37000A"
-                strokeWidth="5"
-                filter="url(#brush-glow)"
-              />
-              {/* Inner ruby dot */}
-              <circle r="15" fill="#92374D" />
-            </g>
+            <path ref={svgPathRef} d={AVANCE_CURVE_PATH} fill="none" />
           </svg>
+
+          {/* Hand-painted Pink Heart Scrubber (pinkheart.png) */}
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-transform duration-75 select-none z-20 flex items-center justify-center"
+            style={{
+              left: `${(knobPos.x / 1280) * 100}%`,
+              top: `${(knobPos.y / 394) * 100}%`,
+            }}
+          >
+            <img
+              src="/img/pinkheart.png"
+              alt="Marcador de avance"
+              className={`h-9 sm:h-11 w-auto object-contain pointer-events-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] drop-shadow-[0_0_10px_rgba(255,117,151,0.7)] transition-transform duration-100 ${
+                isDragging ? 'scale-125 brightness-110' : 'group-hover:scale-115'
+              }`}
+              draggable={false}
+            />
+          </div>
         </div>
       </div>
 

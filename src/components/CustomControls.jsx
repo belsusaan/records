@@ -93,30 +93,47 @@ export default function CustomControls({
           aria-valuemax={duration}
           aria-valuenow={currentTime}
         >
-          {/* Hand-painted avance.png image */}
+          {/* Base avance.svg */}
           <img
-            src="/img/avance.png"
-            alt="Barra de avance pintada a mano"
-            className="w-full h-full object-fill pointer-events-none filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] opacity-90 group-hover:opacity-100 transition-opacity"
+            src="/img/avance.svg"
+            alt="Barra de avance base"
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none opacity-35 brightness-75 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
             draggable={false}
           />
 
-          {/* Dynamic Progress Fill Line along the painted line */}
+          {/* Dynamic Progress Fill avance.svg with changed color */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 left-[4%] h-[3px] bg-gradient-to-r from-[#8f1d2c] via-[#b82d3e] to-[#edd19c] rounded-full pointer-events-none shadow-[0_0_8px_rgba(237,209,156,0.6)]"
-            style={{ width: `${progressRatio * (maxPct - minPct)}%` }}
-          />
+            className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
+            style={{
+              clipPath:
+                progressRatio <= 0
+                  ? 'inset(0 100% 0 0)'
+                  : `inset(0 ${Math.max(0, (1 - (0.04 + progressRatio * (0.96 - 0.04))) * 100)}% 0 0)`,
+            }}
+          >
+            <img
+              src="/img/avance.svg"
+              alt="Avance de la canción"
+              className="w-full h-full object-fill pointer-events-none"
+              style={{
+                filter:
+                  'brightness(3.2) saturate(1.8) hue-rotate(325deg) drop-shadow(0 0 8px rgba(244, 241, 222, 0.8))',
+              }}
+              draggable={false}
+            />
+          </div>
 
-          {/* Slider Stylus Head (Sliding directly on painted stroke) */}
+          {/* Slider Pink Heart */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-transform duration-75 pointer-events-none z-10"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-transform duration-75 pointer-events-none z-10 flex items-center justify-center"
             style={{ left: `${sliderPositionPct}%` }}
           >
-            <div className="relative group-hover:scale-125 transition-transform">
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#edd19c] via-[#b82d3e] to-[#4a0812] shadow-[0_0_10px_rgba(184,45,62,0.9),0_2px_4px_rgba(0,0,0,0.9)] border border-[#edd19c] flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#fff0f2] shadow-sm" />
-              </div>
-            </div>
+            <img
+              src="/img/pinkheart.png"
+              alt="Marcador de avance"
+              className="h-8 w-auto object-contain filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)] drop-shadow-[0_0_8px_rgba(255,117,151,0.6)] group-hover:scale-125 transition-transform"
+              draggable={false}
+            />
           </div>
         </div>
       </div>
