@@ -19,6 +19,10 @@ export default function LyricsBooklet({
   useEffect(() => {
     let isCancelled = false;
 
+    // Immediately clear previous track's lyrics and reset active index
+    setDynamicLyrics(track?.timedLyrics && track.timedLyrics.length > 2 ? track.timedLyrics : null);
+    setActiveIdx(-1);
+
     async function loadLyrics() {
       // If track has embedded detailed timedLyrics, use them directly (curated sync)
       if (track?.timedLyrics && track.timedLyrics.length > 2) {
@@ -28,7 +32,10 @@ export default function LyricsBooklet({
         return;
       }
 
-      if (!track?.title) return;
+      if (!track?.title) {
+        setIsFetchingLyrics(false);
+        return;
+      }
 
       setIsFetchingLyrics(true);
       try {
@@ -38,12 +45,21 @@ export default function LyricsBooklet({
           track.duration
         );
 
-        if (!isCancelled && result && result.lyrics && result.lyrics.length > 0) {
-          setDynamicLyrics(result.lyrics);
-          setIsSynced(Boolean(result.synced));
+        if (!isCancelled) {
+          if (result && result.lyrics && result.lyrics.length > 0) {
+            setDynamicLyrics(result.lyrics);
+            setIsSynced(Boolean(result.synced));
+          } else {
+            setDynamicLyrics([]);
+            setIsSynced(false);
+          }
         }
       } catch (err) {
         console.warn('Error loading dynamic lyrics:', err);
+        if (!isCancelled) {
+          setDynamicLyrics([]);
+          setIsSynced(false);
+        }
       } finally {
         if (!isCancelled) {
           setIsFetchingLyrics(false);
@@ -58,9 +74,7 @@ export default function LyricsBooklet({
     };
   }, [track?.title, track?.artist, track?.duration, track?.timedLyrics]);
 
-  const lyricsToDisplay = dynamicLyrics || track?.timedLyrics || [
-    { time: 0, text: 'Cargando letras...' },
-  ];
+  const lyricsToDisplay = dynamicLyrics || (track?.timedLyrics && track.timedLyrics.length > 2 ? track.timedLyrics : null);
 
   const [activeIdx, setActiveIdx] = useState(-1);
   const lastTrackTitleRef = useRef(track?.title);
@@ -167,8 +181,23 @@ export default function LyricsBooklet({
         ref={scrollContainerRef}
         className="relative w-full space-y-4 overflow-y-auto overflow-x-hidden h-[420px] custom-scrollbar pl-4 sm:pl-6 pr-4 pt-2 pb-56"
       >
+        {/* Loading state when fetching new song lyrics */}
+        {isFetchingLyrics && (!lyricsToDisplay || lyricsToDisplay.length === 0) && (
+          <div className="py-16 flex flex-col items-center justify-center gap-3 text-[#92374D] font-dongle text-2xl tracking-wide select-none">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EEABC4] animate-ping" />
+            <span className="opacity-80">Sintonizando letra...</span>
+          </div>
+        )}
+
+        {/* Empty state if lyrics not found */}
+        {!isFetchingLyrics && (!lyricsToDisplay || lyricsToDisplay.length === 0) && (
+          <div className="py-16 text-[#92374D]/70 font-dongle text-2xl tracking-wide select-none text-center">
+            No se encontraron letras disponibles para esta canción.
+          </div>
+        )}
+
         {/* Intro indicator when music is in the instrumental section */}
-        {activeIdx === -1 && lyricsToDisplay[0]?.time > 4 && (
+        {activeIdx === -1 && lyricsToDisplay && lyricsToDisplay[0]?.time > 4 && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,7 +206,7 @@ export default function LyricsBooklet({
             <span>...</span>
           </motion.div>
         )}
-        {lyricsToDisplay.map((line, idx) => {
+        {lyricsToDisplay && lyricsToDisplay.map((line, idx) => {
           const isPast = activeIdx > idx;
           const isActive = activeIdx === idx;
 

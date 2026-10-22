@@ -11,12 +11,19 @@ import {
   isSpotifyAuthenticated,
   spotifyGetUserProfile,
 } from './services/spotify';
+import { prefetchPlaylistLyrics } from './services/lyricsService';
+import { PLAYLIST_SIDE_A, PLAYLIST_SIDE_B } from './data/playlist';
 
 export default function App() {
   const [isGiftOpened, setIsGiftOpened] = useState(false);
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
   const [isSpotifyAuth, setIsSpotifyAuth] = useState(isSpotifyAuthenticated());
   const [spotifyUser, setSpotifyUser] = useState(null);
+
+  // Prefetch lyrics in the background so all songs load instantly
+  useEffect(() => {
+    prefetchPlaylistLyrics([...PLAYLIST_SIDE_A, ...PLAYLIST_SIDE_B]);
+  }, []);
 
   // Check Spotify OAuth redirect on load
   useEffect(() => {

@@ -157,3 +157,18 @@ export async function getSynchronizedLyrics(trackTitle, artistName, duration = 0
   lyricsCache.set(cacheKey, fallback);
   return fallback;
 }
+
+/**
+ * Background prefetch lyrics for an array of tracks to eliminate delay on song switch
+ */
+export function prefetchPlaylistLyrics(tracks = []) {
+  if (!Array.isArray(tracks) || tracks.length === 0) return;
+  setTimeout(() => {
+    tracks.forEach((track, index) => {
+      if (!track?.title) return;
+      setTimeout(() => {
+        getSynchronizedLyrics(track.title, track.artist, track.duration).catch(() => {});
+      }, index * 450); // Stagger requests to be gentle on LRCLIB API
+    });
+  }, 1200);
+}
