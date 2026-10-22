@@ -4,12 +4,8 @@ import PaperCrumple from './PaperCrumple';
 
 /**
  * WordImageIntro — Pantalla de inicio con carta artesanal interactiva.
- *
- * La carta (letter.png) usa el componente PaperCrumple de ReactBits.
- * El usuario la sostiene y arrastra para arrugarla.
- * Cuando la suelta completamente arrugada → se abre el reproductor.
- *
- * Fondo oscuro con las imágenes de palabras flotando en el fondo como atmósfera.
+ * Paleta: #92374D, #EEABC4, #1C3041, #F4F1DE, #37000A
+ * Tipografías: Butterfly Kids & Dongle
  */
 export default function WordImageIntro({ isOpen, onOpen }) {
   const [transitioning, setTransitioning] = useState(false);
@@ -44,24 +40,24 @@ export default function WordImageIntro({ isOpen, onOpen }) {
           className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
           style={{
             background:
-              'radial-gradient(ellipse at 50% 40%, #1f0d0d 0%, #0a0506 60%, #030103 100%)',
+              'radial-gradient(ellipse at 50% 40%, #37000A 0%, #200006 60%, #100003 100%)',
           }}
         >
           {/* ── Ambient grain texture ── */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-25"
+            className="absolute inset-0 pointer-events-none opacity-20"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'repeat',
             }}
           />
 
-          {/* ── Crimson center glow ── */}
+          {/* ── Vintage Berry center glow (#92374D) ── */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                'radial-gradient(ellipse 55% 45% at 50% 50%, rgba(143,29,44,0.15) 0%, transparent 70%)',
+                'radial-gradient(ellipse 55% 45% at 50% 50%, rgba(146,55,77,0.22) 0%, transparent 70%)',
             }}
           />
 
@@ -90,7 +86,7 @@ export default function WordImageIntro({ isOpen, onOpen }) {
               foldSharpness={0.65}
               wrinkleDepth={0.8}
               creaseStrength={0.2}
-              paperColor="#f2ece1"
+              paperColor="#F4F1DE"
               roughness={0.88}
               paperTexture={0.12}
               lightIntensity={2.0}
@@ -111,7 +107,7 @@ export default function WordImageIntro({ isOpen, onOpen }) {
             />
           </motion.div>
 
-          {/* ── Transition overlay flash ── */}
+          {/* ── Transition overlay flash (#92374D) ── */}
           <AnimatePresence>
             {transitioning && (
               <motion.div
@@ -119,7 +115,7 @@ export default function WordImageIntro({ isOpen, onOpen }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0, 0.6, 0] }}
                 transition={{ duration: 0.5, times: [0, 0.3, 1] }}
-                className="absolute inset-0 bg-[#8f1d2c] pointer-events-none"
+                className="absolute inset-0 bg-[#92374D] pointer-events-none"
               />
             )}
           </AnimatePresence>

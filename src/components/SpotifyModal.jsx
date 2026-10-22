@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, X, Check, ExternalLink, RefreshCw, Key, Music, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Radio, X, ExternalLink, Key, LogOut } from 'lucide-react';
 import {
   getStoredConfig,
   saveSpotifyConfig,
@@ -8,6 +8,11 @@ import {
   clearSpotifyTokens,
 } from '../services/spotify';
 
+/**
+ * SpotifyModal — Panel de configuración y desconexión de Spotify
+ * Paleta: #92374D, #EEABC4, #1C3041, #F4F1DE, #37000A
+ * Tipografías: Butterfly Kids & Dongle
+ */
 export default function SpotifyModal({
   isOpen,
   onClose,
@@ -57,25 +62,25 @@ export default function SpotifyModal({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-md rounded-2xl bg-gradient-to-b from-[#131b26] via-[#0d131c] to-[#080c12] border border-[#263b52] shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-6 text-[#d8e3f0]"
+        className="relative w-full max-w-md rounded-3xl bg-[#1C3041] border-2 border-[#92374D]/40 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(146,55,77,0.2)] p-6 sm:p-7 text-[#F4F1DE]"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[#1a2533] text-[#8ea4be] hover:text-white transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[#37000A]/50 text-[#EEABC4] hover:text-[#F4F1DE] transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-[#1db954]/20 border border-[#1db954]/40 flex items-center justify-center text-[#1db954]">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-[#92374D]/30 border border-[#92374D]/60 flex items-center justify-center text-[#EEABC4]">
             <Radio className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-xl font-serif-vintage tracking-wide text-white font-semibold">
+            <h3 className="text-3xl font-butterfly tracking-wide text-[#F4F1DE] leading-tight">
               Conexión a Spotify API
             </h3>
-            <p className="text-xs text-[#829bb8]">
+            <p className="text-xl font-dongle text-[#EEABC4] leading-none">
               OAuth 2.0 PKCE & Control de Reproducción
             </p>
           </div>
@@ -83,43 +88,43 @@ export default function SpotifyModal({
 
         {isConnected ? (
           <div className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-[#102219] border border-[#1db954]/40 flex items-center gap-3">
+            <div className="p-3.5 rounded-2xl bg-[#37000A]/80 border border-[#92374D]/50 flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />
-              <div className="text-xs">
-                <span className="block font-semibold text-[#a7f3d0]">Spotify Conectado</span>
-                <span className="text-[#6ee7b7]">{spotifyUser || 'Sesión Activa'}</span>
+              <div className="font-dongle leading-tight">
+                <span className="block text-2xl font-bold text-[#F4F1DE]">Spotify Conectado</span>
+                <span className="text-xl text-[#EEABC4]">{spotifyUser || 'Sesión Activa'}</span>
               </div>
             </div>
 
-            <p className="text-xs text-[#8fa3bc] leading-relaxed">
-              El tocadiscos está vinculado a tu cuenta de Spotify. Los botones de play, pausa, pista siguiente y volumen controlan tu reproductor de Spotify en vivo.
+            <p className="text-2xl font-dongle text-[#EEABC4]/90 leading-snug">
+              El tocadiscos está vinculado a tu cuenta de Spotify. Los controles reproducen la playlist en vivo en tu dispositivo con letras sincronizadas.
             </p>
 
             <button
               type="button"
               onClick={handleDisconnect}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#3b1c23] hover:bg-[#52232e] text-[#fca5a5] border border-[#8f1d2c]/50 text-xs font-semibold cursor-pointer transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#92374D] hover:bg-[#a64259] text-[#F4F1DE] border border-[#EEABC4]/30 font-dongle text-2xl font-bold cursor-pointer transition-colors shadow-md"
             >
-              <LogOut className="w-4 h-4" /> Desconectar de Spotify
+              <LogOut className="w-5 h-5" /> Desconectar de Spotify
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSaveAndConnect} className="space-y-4">
-            <p className="text-xs text-[#8ea4be] leading-relaxed">
-              Para vincular tu cuenta y tu playlist de regalo, ingresa tu <strong className="text-[#a5c4e8]">Client ID</strong> registrado en{' '}
+          <form onSubmit={handleSaveAndConnect} className="space-y-3 font-dongle">
+            <p className="text-xl text-[#EEABC4]/90 leading-tight">
+              Para vincular tu cuenta y tu playlist de regalo, ingresa tu Client ID registrado en{' '}
               <a
                 href="https://developer.spotify.com/dashboard"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[#1db954] hover:underline inline-flex items-center gap-0.5"
+                className="text-[#F4F1DE] underline inline-flex items-center gap-0.5"
               >
                 Spotify Developer Dashboard <ExternalLink className="w-3 h-3" />
               </a>
-              . (Añade <code className="bg-[#0b1017] px-1 py-0.5 rounded text-[11px] text-[#edd19c]">{window.location.origin + window.location.pathname}</code> como Redirect URI).
+              .
             </p>
 
             <div>
-              <label className="block text-xs uppercase tracking-wider text-[#9bb3cf] mb-1 font-mono">
+              <label className="block text-xl uppercase tracking-wider text-[#EEABC4] mb-0.5 leading-none">
                 Spotify Client ID
               </label>
               <input
@@ -127,40 +132,40 @@ export default function SpotifyModal({
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
                 placeholder="Ej: 4a2b9c..."
-                className="w-full bg-[#0a0f16] border border-[#253950] focus:border-[#1db954] rounded-lg px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                className="w-full bg-[#37000A] border border-[#92374D]/50 focus:border-[#EEABC4] rounded-xl px-3 py-1.5 text-xl text-[#F4F1DE] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs uppercase tracking-wider text-[#9bb3cf] mb-1 font-mono">
+              <label className="block text-xl uppercase tracking-wider text-[#EEABC4] mb-0.5 leading-none">
                 Playlist ID (Opcional)
               </label>
               <input
                 type="text"
                 value={playlistId}
                 onChange={(e) => setPlaylistId(e.target.value)}
-                placeholder="Ej: 37i9dQZF1DXcBWIGoYBM5M"
-                className="w-full bg-[#0a0f16] border border-[#253950] focus:border-[#1db954] rounded-lg px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                placeholder="4aF29SVP3mUQZItc3xiOV0"
+                className="w-full bg-[#37000A] border border-[#92374D]/50 focus:border-[#EEABC4] rounded-xl px-3 py-1.5 text-xl text-[#F4F1DE] focus:outline-none"
               />
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-[#f87171]">{errorMsg}</p>
+              <p className="text-xl text-red-300">{errorMsg}</p>
             )}
 
             <div className="pt-2 flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 text-xs text-[#8ea4be] hover:text-white"
+                className="flex-1 py-1.5 text-2xl text-[#EEABC4] hover:text-[#F4F1DE] cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 type="submit"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider bg-[#1db954] text-black hover:bg-[#1ed760] transition-colors cursor-pointer shadow-lg"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-2xl text-2xl font-bold bg-[#1db954] text-[#1C3041] hover:bg-[#1ed760] transition-colors cursor-pointer shadow-lg"
               >
-                <Key className="w-3.5 h-3.5" /> Conectar Spotify
+                <Key className="w-4 h-4" /> Conectar Spotify
               </button>
             </div>
           </form>

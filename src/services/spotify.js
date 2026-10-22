@@ -250,6 +250,55 @@ export async function spotifyPlay(options = null) {
   return await spotifyFetch('/me/player/play', 'PUT', body);
 }
 
+export async function spotifyGetDevices() {
+  const data = await spotifyFetch('/me/player/devices');
+  return data?.devices || [];
+}
+
+export async function spotifyTransferPlayback(deviceId, play = true) {
+  return await spotifyFetch('/me/player', 'PUT', {
+    device_ids: [deviceId],
+    play: play,
+  });
+}
+
+export async function spotifyStartGiftPlaylist(trackUri = null) {
+  const playlistId = getStoredConfig().playlistId || DEFAULT_PLAYLIST_ID;
+  const contextUri = `spotify:playlist:${playlistId}`;
+
+  let devices = [];
+  try {
+    devices = (await spotifyGetDevices()) || [];
+  } catch (e) {
+    // ignore
+  }
+
+  const activeDevice = devices.find((d) => d.is_active);
+  const targetDevice = activeDevice || devices[0];
+
+  if (!activeDevice && targetDevice) {
+    try {
+      await spotifyTransferPlayback(targetDevice.id, false);
+      await new Promise((r) => setTimeout(r, 250));
+    } catch (e) {
+      console.warn('Device transfer notice:', e);
+    }
+  }
+
+  const query = targetDevice ? `?device_id=${targetDevice.id}` : '';
+  const body = {
+    context_uri: contextUri,
+  };
+
+  if (trackUri) {
+    body.offset = { uri: trackUri };
+  } else {
+    body.offset = { position: 0 };
+  }
+
+  return await spotifyFetch(`/me/player/play${query}`, 'PUT', body);
+}
+
 export async function spotifyGetPlaylist(playlistId = null) {
   const effectiveId = playlistId || getStoredConfig().playlistId || DEFAULT_PLAYLIST_ID;
   if (!effectiveId) return null;

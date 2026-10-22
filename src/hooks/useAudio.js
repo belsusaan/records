@@ -20,6 +20,7 @@ import {
   spotifySetShuffle,
   spotifySetRepeat,
   spotifyGetPlayback,
+  spotifyStartGiftPlaylist,
 } from '../services/spotify';
 
 export function useAudio() {
@@ -37,15 +38,13 @@ export function useAudio() {
   const [isShuffle, setIsShuffle] = useState(false);
   const [isCrackleEnabled, setIsCrackleEnabled] = useState(true);
   const [isUsingProceduralFallback, setIsUsingProceduralFallback] = useState(false);
-  const [spotifyTrack, setSpotifyTrack] = useState(null);
   const [isSpotifyLive, setIsSpotifyLive] = useState(false);
 
   const audioRef = useRef(new Audio());
   const timerRef = useRef(null);
 
   const currentPlaylist = activeSide === 'A' ? playlistSideA : playlistSideB;
-  const localTrack = currentPlaylist[currentTrackIndex] || currentPlaylist[0];
-  const currentTrack = isSpotifyLive && spotifyTrack ? spotifyTrack : localTrack;
+  const currentTrack = currentPlaylist[currentTrackIndex] || currentPlaylist[0];
 
   // Helper to get effective volume
   const effectiveVolume = isMuted ? 0 : volume;
@@ -66,19 +65,24 @@ export function useAudio() {
 
         if (playback && playback.item) {
           const item = playback.item;
-          const trackTitle = item.name;
-          const artistName = (item.artists || []).map((a) => a.name).join(', ');
           const trackDuration = (item.duration_ms || 180000) / 1000;
           const trackProgress = (playback.progress_ms || 0) / 1000;
 
-          setSpotifyTrack({
-            id: item.id,
-            title: trackTitle,
-            artist: artistName,
-            duration: trackDuration,
-            albumArt: item.album?.images?.[0]?.url,
-            isSpotify: true,
-          });
+          // Match Spotify playback with our playlist
+          const idxA = playlistSideA.findIndex(
+            (t) => t.uri === item.uri || (t.title && t.title.toLowerCase() === item.name.toLowerCase())
+          );
+          const idxB = playlistSideB.findIndex(
+            (t) => t.uri === item.uri || (t.title && t.title.toLowerCase() === item.name.toLowerCase())
+          );
+
+          if (idxA !== -1) {
+            setActiveSide((curr) => (curr !== 'A' ? 'A' : curr));
+            setCurrentTrackIndex((curr) => (curr !== idxA ? idxA : curr));
+          } else if (idxB !== -1) {
+            setActiveSide((curr) => (curr !== 'B' ? 'B' : curr));
+            setCurrentTrackIndex((curr) => (curr !== idxB ? idxB : curr));
+          }
 
           setIsSpotifyLive(true);
           setIsPlaying(Boolean(playback.is_playing));
@@ -97,13 +101,13 @@ export function useAudio() {
     }
 
     checkSpotifyPlayback();
-    const interval = setInterval(checkSpotifyPlayback, 1800);
+    const interval = setInterval(checkSpotifyPlayback, 1500);
 
     return () => {
       isSubscribed = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [playlistSideA, playlistSideB]);
 
   // Initialize track on index/side change
   useEffect(() => {
@@ -205,7 +209,7 @@ export function useAudio() {
     }
   }, [effectiveVolume, isCrackleEnabled, isPlaying]);
 
-  const playAudio = useCallback(() => {
+  const playAudio = useCallback((forceTrackUri = null) => {
     getAudioContext();
     playNeedleDropSFX();
 
@@ -214,13 +218,10 @@ export function useAudio() {
     }
 
     if (isSpotifyAuthenticated()) {
-      const playOpts = currentTrack?.uri
-        ? {
-            context_uri: 'spotify:playlist:4aF29SVP3mUQZItc3xiOV0',
-            offset: { uri: currentTrack.uri },
-          }
-        : null;
-      spotifyPlay(playOpts).catch((err) => console.log('Spotify playback notice:', err));
+      const targetUri = forceTrackUri || currentTrack?.uri;
+      spotifyStartGiftPlaylist(targetUri).catch((err) =>
+        console.log('Spotify start playlist notice:', err)
+      );
     }
 
     const audio = audioRef.current;
@@ -277,33 +278,40 @@ export function useAudio() {
   }, [isLooping]);
 
   const nextTrack = useCallback(() => {
-    if (isSpotifyAuthenticated()) {
-      spotifyNext().catch((err) => console.log('Spotify playback notice:', err));
-    }
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
+    let nextIdx;
     if (isShuffle) {
-      let nextIdx = Math.floor(Math.random() * list.length);
+      nextIdx = Math.floor(Math.random() * list.length);
       if (list.length > 1 && nextIdx === currentTrackIndex) {
         nextIdx = (nextIdx + 1) % list.length;
       }
-      setCurrentTrackIndex(nextIdx);
     } else {
-      setCurrentTrackIndex((prev) => (prev + 1) % list.length);
+      nextIdx = (currentTrackIndex + 1) % list.length;
+    }
+    setCurrentTrackIndex(nextIdx);
+    const targetTrack = list[nextIdx];
+    if (isSpotifyAuthenticated() && targetTrack?.uri) {
+      spotifyStartGiftPlaylist(targetTrack.uri).catch(() => {});
     }
   }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex]);
 
   const prevTrack = useCallback(() => {
-    if (isSpotifyAuthenticated()) {
-      spotifyPrevious().catch((err) => console.log('Spotify playback notice:', err));
-    }
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
     if (currentTime > 3) {
       if (audioRef.current) audioRef.current.currentTime = 0;
       setCurrentTime(0);
+      if (isSpotifyAuthenticated()) {
+        spotifySeek(0).catch(() => {});
+      }
       return;
     }
-    setCurrentTrackIndex((prev) => (prev - 1 + list.length) % list.length);
-  }, [activeSide, playlistSideA, playlistSideB, currentTime]);
+    const prevIdx = (currentTrackIndex - 1 + list.length) % list.length;
+    setCurrentTrackIndex(prevIdx);
+    const targetTrack = list[prevIdx];
+    if (isSpotifyAuthenticated() && targetTrack?.uri) {
+      spotifyStartGiftPlaylist(targetTrack.uri).catch(() => {});
+    }
+  }, [activeSide, playlistSideA, playlistSideB, currentTime, currentTrackIndex]);
 
   const seek = useCallback(
     (fractionOrSeconds) => {
@@ -329,7 +337,12 @@ export function useAudio() {
     const nextSide = activeSide === 'A' ? 'B' : 'A';
     setActiveSide(nextSide);
     setCurrentTrackIndex(0);
-  }, [activeSide]);
+    const targetList = nextSide === 'A' ? playlistSideA : playlistSideB;
+    const targetTrack = targetList[0];
+    if (isSpotifyAuthenticated() && targetTrack?.uri) {
+      spotifyStartGiftPlaylist(targetTrack.uri).catch(() => {});
+    }
+  }, [activeSide, playlistSideA, playlistSideB]);
 
   const setVolume = useCallback((val) => {
     const clamped = Math.max(0, Math.min(1, val));

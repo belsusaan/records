@@ -60,7 +60,7 @@ export default function TurntableCard({
 
   return (
     <div
-      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#72a5f8] shadow-[0_20px_50px_rgba(0,0,0,0.55)] select-none ${className}`}
+      className={`relative w-full max-w-[490px] sm:max-w-[530px] rounded-[48px] sm:rounded-[56px] p-6 sm:p-9 flex flex-col items-center bg-[#1C3041] border-2 border-[#92374D]/35 shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_40px_rgba(146,55,77,0.15)] select-none ${className}`}
     >
       {/* ================= 1. VINYL RECORD WITH REACTBITS FLIPCARD & HAND-PAINTED TONEARM ================= */}
       <div className="relative w-full max-w-[310px] sm:max-w-[340px] aspect-square flex items-center justify-center mt-1 mb-2">
@@ -81,13 +81,13 @@ export default function TurntableCard({
         />
       </div>
 
-      {/* ================= 2. TITLE & ARTIST (EXACTLY AS FIGMA) ================= */}
+      {/* ================= 2. TITLE & ARTIST (BUTTERFLY KIDS + DONGLE) ================= */}
       <div className="w-full px-3 text-left mt-2 mb-1">
-        <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-wide leading-none drop-shadow-sm font-butterfly">
-          {currentTrack?.title || 'Ojos color sol'}
+        <h2 className="text-4xl sm:text-5xl font-bold text-[#F4F1DE] tracking-wide leading-tight drop-shadow-sm font-butterfly truncate">
+          {currentTrack?.title || 'En Un Sólo Día'}
         </h2>
-        <p className="text-2xl sm:text-3xl text-white/95 mt-1 tracking-wide leading-none font-butterfly">
-          {currentTrack?.artist || 'Calle 13 - Silvio Rodríguez'}
+        <p className="text-2xl sm:text-3xl text-[#EEABC4] tracking-wide leading-none font-dongle mt-0.5">
+          {currentTrack?.artist || 'Morat'}
         </p>
       </div>
 
@@ -111,9 +111,9 @@ export default function TurntableCard({
             draggable={false}
           />
 
-          {/* Progress Fill Line along painted line */}
+          {/* Progress Fill Line along painted line (#EEABC4 blush glow) */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 left-[4%] h-[3px] bg-white rounded-full pointer-events-none shadow-[0_0_6px_rgba(255,255,255,0.9)]"
+            className="absolute top-1/2 -translate-y-1/2 left-[4%] h-[3px] bg-[#EEABC4] rounded-full pointer-events-none shadow-[0_0_8px_#EEABC4]"
             style={{ width: `${progressRatio * (maxPct - minPct)}%` }}
           />
 
@@ -123,8 +123,8 @@ export default function TurntableCard({
             style={{ left: `${sliderPositionPct}%` }}
           >
             <div className="relative group-hover:scale-125 transition-transform">
-              <div className="w-3.5 h-3.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9),0_2px_4px_rgba(0,0,0,0.5)] border border-[#72a5f8] flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#8f1d2c]" />
+              <div className="w-3.5 h-3.5 rounded-full bg-[#F4F1DE] shadow-[0_0_8px_rgba(244,241,222,0.9),0_2px_4px_rgba(0,0,0,0.5)] border border-[#1C3041] flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#92374D]" />
               </div>
             </div>
           </div>

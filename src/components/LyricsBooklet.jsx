@@ -86,27 +86,27 @@ export default function LyricsBooklet({
       {/* ================= 1. HEADER (TITLE & ARTIST) ================= */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1db954]/20 border border-[#1db954]/40 text-[#a7f3d0] text-[11px] font-sans">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#1db954] animate-pulse" />
-            <Sparkles className="w-3 h-3 text-[#1db954]" />
-            <span>{isSynced ? 'Letras sincronizadas en vivo' : 'Letras de la canción'}</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-0.5 rounded-full bg-[#1C3041] border border-[#92374D]/50 text-[#EEABC4] text-xl font-dongle shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[#EEABC4] animate-pulse" />
+            <Sparkles className="w-4 h-4 text-[#EEABC4]" />
+            <span className="leading-none">{isSynced ? 'Letras sincronizadas en vivo' : 'Letras de la canción'}</span>
           </div>
           {isFetchingLyrics && (
-            <span className="text-[11px] text-white/40 italic">Buscando...</span>
+            <span className="text-lg text-[#EEABC4]/60 font-dongle italic">Buscando...</span>
           )}
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-wide leading-tight drop-shadow-sm font-butterfly">
-          {track?.title || 'Ojos color sol'}{' '}
-          <span className="mx-1 font-light text-white/70">•</span>{' '}
-          {track?.artist || 'Calle 13 - Silvio Rodríguez'}
+        <h1 className="text-4xl sm:text-5xl font-bold text-[#F4F1DE] tracking-wide leading-tight drop-shadow-sm font-butterfly">
+          {track?.title || 'En Un Sólo Día'}{' '}
+          <span className="mx-2 font-light text-[#EEABC4]/50">•</span>{' '}
+          <span className="font-dongle text-3xl sm:text-4xl text-[#EEABC4] font-normal">{track?.artist || 'Morat'}</span>
         </h1>
       </div>
 
       {/* ================= 2. SYNCHRONIZED LYRICS LIST ================= */}
       <div
         ref={scrollContainerRef}
-        className="w-full space-y-3.5 overflow-y-auto max-h-[400px] custom-scrollbar pr-3 py-2 scroll-smooth"
+        className="w-full space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar pr-3 py-2 scroll-smooth"
       >
         {lyricsToDisplay.map((line, idx) => {
           const isPast = activeIndex > idx;
@@ -117,13 +117,13 @@ export default function LyricsBooklet({
               key={`${idx}-${line.time}`}
               ref={isActive ? activeLineRef : null}
               onClick={() => onSeek && onSeek(line.time)}
-              whileHover={{ x: 5 }}
-              className={`cursor-pointer transition-all duration-300 font-butterfly select-text ${
+              whileHover={{ x: 6 }}
+              className={`cursor-pointer transition-all duration-300 font-butterfly select-text leading-snug ${
                 isActive
-                  ? 'text-white text-2xl sm:text-3xl font-semibold scale-[1.02] origin-left drop-shadow-[0_0_15px_rgba(255,255,255,0.9)] opacity-100'
+                  ? 'text-[#F4F1DE] text-3xl sm:text-4xl font-semibold scale-[1.03] origin-left drop-shadow-[0_0_15px_rgba(244,241,222,0.9)] opacity-100'
                   : isPast
-                  ? 'text-white/85 text-xl sm:text-2xl hover:text-white'
-                  : 'text-[#c26d6d] text-xl sm:text-2xl opacity-75 hover:opacity-100'
+                  ? 'text-[#F4F1DE]/75 text-2xl sm:text-3xl hover:text-[#F4F1DE]'
+                  : 'text-[#EEABC4]/75 text-2xl sm:text-3xl opacity-75 hover:opacity-100 hover:text-[#EEABC4]'
               }`}
             >
               <span>{line.text}</span>

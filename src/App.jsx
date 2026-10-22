@@ -79,7 +79,16 @@ export default function App() {
 
   // ================= PASO 1 Y 2: CARTA DE PAPEL Y TOCADISCOS =================
   return (
-    <div className="min-h-screen bg-[#1b0e0e] text-white font-butterfly relative overflow-x-hidden flex flex-col justify-center items-center selection:bg-[#72a5f8] selection:text-white p-4 sm:p-8">
+    <div className="min-h-screen bg-[#37000A] text-[#F4F1DE] relative overflow-x-hidden flex flex-col justify-center items-center selection:bg-[#92374D] selection:text-[#F4F1DE] p-4 sm:p-8">
+      {/* ── Ambient Background Vignette ── */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 30%, rgba(146,55,77,0.18) 0%, rgba(55,0,10,0.85) 60%, #150004 100%)',
+        }}
+      />
+
       {/* ================= PANTALLA 1: INTRO CON CARTA DE PAPEL ================= */}
       <WordImageIntro
         isOpen={isGiftOpened}
@@ -90,7 +99,7 @@ export default function App() {
       {isGiftOpened && (
         <main className="relative z-10 max-w-6xl w-full mx-auto flex items-center justify-center my-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center justify-center w-full">
-            {/* ================= 1. IZQUIERDA: TARJETA AZUL DEL TOCADISCOS ================= */}
+            {/* ================= 1. IZQUIERDA: TARJETA DEL TOCADISCOS (#1C3041) ================= */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -138,11 +147,11 @@ export default function App() {
         <button
           type="button"
           onClick={() => setShowSpotifyModal(true)}
-          className="fixed top-4 right-4 z-40 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#12080a]/85 hover:bg-[#1e0d11] border border-[#d4a366]/25 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
+          className="fixed top-4 right-4 z-40 flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#1C3041]/90 hover:bg-[#1C3041] border border-[#92374D]/50 backdrop-blur-md transition-all cursor-pointer shadow-lg group"
           title="Cuenta de Spotify conectada"
         >
-          <span className="w-2 h-2 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />
-          <span className="text-[#eedcc5]/90 text-[12px] tracking-wide font-sans">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#1db954] shadow-[0_0_8px_#1db954]" />
+          <span className="text-[#F4F1DE] text-2xl font-dongle tracking-wide leading-none">
             {spotifyUser || 'Spotify Conectado'}
           </span>
         </button>
