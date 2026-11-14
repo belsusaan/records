@@ -170,9 +170,9 @@ export default function LyricsBooklet({
       {/* ================= 1. HEADER (TITLE & ARTIST) ================= */}
       <div className="mb-3 pl-4 sm:pl-6">
         <h1 className="text-4xl sm:text-5xl font-bold text-[#37000A] tracking-wide leading-tight drop-shadow-sm font-butterfly">
-          {track?.title || 'En Un Sólo Día'}{' '}
+          {track?.title || 'In My Life'}{' '}
           <span className="mx-2 font-light text-[#92374D]/50">•</span>{' '}
-          <span className="font-dongle text-3xl sm:text-4xl text-[#92374D] font-bold">{track?.artist || 'Morat'}</span>
+          <span className="font-dongle text-3xl sm:text-4xl text-[#92374D] font-bold">{track?.artist || 'The Beatles'}</span>
         </h1>
       </div>
 

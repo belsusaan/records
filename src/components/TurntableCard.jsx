@@ -86,10 +86,10 @@ export default function TurntableCard({
       {/* ================= 2. TITLE & ARTIST (BUTTERFLY KIDS + DONGLE) ================= */}
       <div className="w-full px-3 text-left mt-2 mb-1">
         <h2 className="text-4xl sm:text-5xl font-bold text-[#F4F1DE] tracking-wide leading-tight drop-shadow-sm font-butterfly truncate">
-          {currentTrack?.title || 'En Un Sólo Día'}
+          {currentTrack?.title || 'In My Life'}
         </h2>
         <p className="text-2xl sm:text-3xl text-[#EEABC4] tracking-wide leading-none font-dongle mt-0.5">
-          {currentTrack?.artist || 'Morat'}
+          {currentTrack?.artist || 'The Beatles'}
         </p>
       </div>
 
