@@ -325,8 +325,25 @@ export async function spotifyGetPlaylist(playlistId = null) {
   return await spotifyFetch(`/playlists/${effectiveId}`);
 }
 
-export async function spotifyPause() {
-  return await spotifyFetch('/me/player/pause', 'PUT');
+export async function spotifyPause(deviceId = null) {
+  let targetId = deviceId;
+  try {
+    const devices = (await spotifyGetDevices()) || [];
+    const active = devices.find((d) => d.is_active);
+    const target = active || devices[0];
+    if (target) {
+      targetId = target.id;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const query = targetId ? `?device_id=${targetId}` : '';
+  let res = await spotifyFetch(`/me/player/pause${query}`, 'PUT');
+  if (!res && targetId) {
+    res = await spotifyFetch('/me/player/pause', 'PUT');
+  }
+  return res;
 }
 
 export async function spotifyNext() {

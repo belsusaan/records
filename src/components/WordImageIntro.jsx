@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PaperCrumple from './PaperCrumple';
+import { playPaperCrumpleSFX } from '../audio/proceduralAudio';
 
 /**
  * WordImageIntro — Pantalla de inicio con carta artesanal interactiva.
@@ -9,12 +10,22 @@ import PaperCrumple from './PaperCrumple';
  */
 export default function WordImageIntro({ isOpen, onOpen }) {
   const [transitioning, setTransitioning] = useState(false);
+  const hasPlayedSoundRef = useRef(false);
 
   const handleStateChange = useCallback(
     (state) => {
+      if (state === 'holding' && !hasPlayedSoundRef.current) {
+        hasPlayedSoundRef.current = true;
+        playPaperCrumpleSFX();
+      }
+
       if (transitioning || isOpen) return;
 
       if (state === 'crumpled') {
+        if (!hasPlayedSoundRef.current) {
+          hasPlayedSoundRef.current = true;
+          playPaperCrumpleSFX();
+        }
         setTransitioning(true);
         // Small delay so user sees the crumpled ball before transition
         setTimeout(() => {
