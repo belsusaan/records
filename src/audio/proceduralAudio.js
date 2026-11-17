@@ -26,74 +26,14 @@ export function getAudioContext() {
  * Play authentic needle-drop mechanical click & stylus groove friction
  */
 export function playNeedleDropSFX() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  const now = ctx.currentTime;
-  
-  // Mechanical thud
-  const osc = ctx.createOscillator();
-  const oscGain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(90, now);
-  osc.frequency.exponentialRampToValueAtTime(35, now + 0.15);
-
-  oscGain.gain.setValueAtTime(0.4, now);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-
-  osc.connect(oscGain);
-  oscGain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.2);
-
-  // Surface scratch burst
-  const bufferSize = ctx.sampleRate * 0.25;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
-  }
-
-  const noise = ctx.createBufferSource();
-  noise.buffer = buffer;
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.value = 1800;
-  filter.Q.value = 3.0;
-
-  const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.2, now);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
-  noise.connect(filter);
-  filter.connect(noiseGain);
-  noiseGain.connect(ctx.destination);
-
-  noise.start(now + 0.03);
+  // Silenced per user request: App only controls Spotify
 }
 
 /**
  * Play needle lift sound when pausing/stopping
  */
 export function playNeedleLiftSFX() {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const oscGain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(50, now);
-  osc.frequency.exponentialRampToValueAtTime(110, now + 0.08);
-
-  oscGain.gain.setValueAtTime(0.18, now);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-
-  osc.connect(oscGain);
-  oscGain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.1);
+  // Silenced per user request: App only controls Spotify
 }
 
 /**
@@ -166,56 +106,8 @@ const CHORD_PROGRESSIONS = {
 };
 
 export function startProceduralMusic(preset = 'rhodes-warm', volume = 0.5) {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
+  // Disabled: The app only controls Spotify. No background synth music.
   stopProceduralMusic();
-
-  const chords = CHORD_PROGRESSIONS[preset] || CHORD_PROGRESSIONS['rhodes-warm'];
-  let step = 0;
-
-  synthGain = ctx.createGain();
-  synthGain.gain.setValueAtTime(volume * 0.45, ctx.currentTime);
-  synthGain.connect(ctx.destination);
-
-  const playStep = () => {
-    if (!synthGain) return;
-    const now = ctx.currentTime;
-    const currentChord = chords[step % chords.length];
-    step++;
-
-    currentChord.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const noteGain = ctx.createGain();
-
-      // Soft triangle + sine blend for warm vintage Rhodes / electric piano
-      osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.04);
-
-      // Tremolo/vibrato LFO
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.frequency.value = 4.5;
-      lfoGain.gain.value = 1.5;
-      lfo.connect(osc.frequency);
-      lfo.start(now);
-      lfo.stop(now + 2.8);
-
-      const noteDuration = 2.6;
-      noteGain.gain.setValueAtTime(0.001, now);
-      noteGain.gain.linearRampToValueAtTime(0.12 / (idx + 1), now + 0.15 + idx * 0.03);
-      noteGain.gain.exponentialRampToValueAtTime(0.001, now + noteDuration);
-
-      osc.connect(noteGain);
-      noteGain.connect(synthGain);
-
-      osc.start(now + idx * 0.04);
-      osc.stop(now + noteDuration);
-    });
-  };
-
-  playStep();
-  synthTimer = setInterval(playStep, 2500);
 }
 
 export function stopProceduralMusic() {

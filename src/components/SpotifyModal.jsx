@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, X, ExternalLink, Key, LogOut } from 'lucide-react';
+import { Radio, X, ExternalLink, Key, LogOut, Check } from 'lucide-react';
 import {
   getStoredConfig,
   saveSpotifyConfig,
   initiateSpotifyAuth,
   clearSpotifyTokens,
+  spotifyFollowPlaylist,
+  spotifyCheckFollowPlaylist,
+  DEFAULT_PLAYLIST_ID,
 } from '../services/spotify';
 
 /**
@@ -23,12 +26,40 @@ export default function SpotifyModal({
   const [clientId, setClientId] = useState('');
   const [playlistId, setPlaylistId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveNotice, setSaveNotice] = useState('');
 
   useEffect(() => {
     const config = getStoredConfig();
     setClientId(config.clientId || '');
     setPlaylistId(config.playlistId || '');
-  }, [isOpen]);
+
+    if (isOpen && isConnected) {
+      spotifyCheckFollowPlaylist()
+        .then((followed) => setIsSaved(Boolean(followed)))
+        .catch(() => {});
+    }
+  }, [isOpen, isConnected]);
+
+  const handleFollow = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveNotice('');
+    try {
+      const ok = await spotifyFollowPlaylist();
+      if (ok) {
+        setIsSaved(true);
+        setSaveNotice('¡Playlist guardada en tus playlists!');
+      } else {
+        window.open(`https://open.spotify.com/playlist/${DEFAULT_PLAYLIST_ID}`, '_blank', 'noopener,noreferrer');
+      }
+    } catch {
+      window.open(`https://open.spotify.com/playlist/${DEFAULT_PLAYLIST_ID}`, '_blank', 'noopener,noreferrer');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -95,6 +126,36 @@ export default function SpotifyModal({
                 <span className="text-xl text-[#EEABC4]">{spotifyUser || 'Sesión Activa'}</span>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleFollow}
+              disabled={isSaving}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-dongle text-2xl font-bold cursor-pointer transition-colors shadow-md ${
+                isSaved
+                  ? 'bg-[#37000A] text-[#1db954] border border-[#1db954]/50'
+                  : 'bg-[#1db954] text-[#37000A] hover:bg-[#1ed760]'
+              }`}
+            >
+              {isSaved ? (
+                <>
+                  <Check className="w-5 h-5 stroke-[3]" />
+                  <span>Guardada en tus playlists</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.503 17.308c-.216.353-.674.466-1.027.25-2.812-1.718-6.352-2.106-10.522-1.153-.404.092-.806-.16-.898-.564-.092-.403.16-.805.564-.897 4.568-1.044 8.49-.607 11.633 1.314.353.216.466.674.25 1.05zm1.468-3.262c-.272.443-.852.583-1.295.311-3.219-1.978-8.127-2.55-11.935-1.393-.497.151-1.026-.134-1.177-.631-.151-.498.134-1.026.631-1.177 4.356-1.321 9.775-.681 13.465 1.587.443.272.583.852.311 1.303zm.126-3.41c-3.86-2.292-10.224-2.503-13.888-1.39-.59.18-1.22-.16-1.399-.75-.18-.59.16-1.22.75-1.4 4.218-1.281 11.246-1.035 15.688 1.602.532.316.705 1.011.389 1.543-.315.531-1.01.705-1.54.395z" />
+                  </svg>
+                  <span>{isSaving ? 'Guardando...' : 'Agregar a mi Spotify'}</span>
+                </>
+              )}
+            </button>
+            {saveNotice && (
+              <p className="text-xl text-center font-dongle text-[#EEABC4] -mt-2">
+                {saveNotice}
+              </p>
+            )}
 
             <button
               type="button"

@@ -27,7 +27,7 @@ export function useAudio() {
   const [activeSide, setActiveSide] = useState('A'); // 'A' or 'B'
   const [playlistSideA, setPlaylistSideA] = useState(PLAYLIST_SIDE_A);
   const [playlistSideB, setPlaylistSideB] = useState(PLAYLIST_SIDE_B);
-  
+
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -36,6 +36,29 @@ export function useAudio() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [isShuffle, setIsShuffle] = useState(false);
+  const [isSideAEnded, setIsSideAEnded] = useState(false);
+  const isLoopingRef = useRef(false);
+  const isShuffleRef = useRef(false);
+  const activeSideRef = useRef(activeSide);
+  const currentTrackIndexRef = useRef(currentTrackIndex);
+  const lastUserLoopActionTimeRef = useRef(0);
+  const lastUserShuffleActionTimeRef = useRef(0);
+
+  useEffect(() => {
+    isLoopingRef.current = isLooping;
+  }, [isLooping]);
+
+  useEffect(() => {
+    isShuffleRef.current = isShuffle;
+  }, [isShuffle]);
+
+  useEffect(() => {
+    activeSideRef.current = activeSide;
+  }, [activeSide]);
+
+  useEffect(() => {
+    currentTrackIndexRef.current = currentTrackIndex;
+  }, [currentTrackIndex]);
   const [isCrackleEnabled, setIsCrackleEnabled] = useState(false);
   const [isUsingProceduralFallback, setIsUsingProceduralFallback] = useState(false);
   const [isSpotifyLive, setIsSpotifyLive] = useState(false);
@@ -97,8 +120,8 @@ export function useAudio() {
   useEffect(() => {
     if (isSpotifyAuthenticated() && !hasEnforcedInitialModesRef.current) {
       hasEnforcedInitialModesRef.current = true;
-      spotifySetShuffle(false).catch(() => {});
-      spotifySetRepeat('off').catch(() => {});
+      spotifySetShuffle(false).catch(() => { });
+      spotifySetRepeat('off').catch(() => { });
     }
   }, []);
 
@@ -173,6 +196,28 @@ export function useAudio() {
               return curr;
             });
           } else if (idxB !== -1) {
+            // Check if Side A just ended naturally in Spotify playback
+            if (activeSideRef.current === 'A' && !manualTrackChangeRef.current) {
+              if (isSpotifyAuthenticated()) {
+                spotifyPause().catch(() => { });
+              }
+              setIsPlaying(false);
+              setIsSideAEnded(true);
+              setCurrentTime(0);
+              return;
+            }
+
+            // Check if Side A just ended naturally in Spotify playback
+            if (activeSideRef.current === 'A' && !manualTrackChangeRef.current) {
+              if (isSpotifyAuthenticated()) {
+                spotifyPause().catch(() => { });
+              }
+              setIsPlaying(false);
+              setIsSideAEnded(true);
+              setCurrentTime(0);
+              return;
+            }
+
             setActiveSide((curr) => {
               if (curr !== 'B') {
                 trackChanged = true;
@@ -203,16 +248,12 @@ export function useAudio() {
               prevAnchor.spotifyTime + (arrivalTime - prevAnchor.clientTimestamp) / 1000;
             const diff = exactSpotifyProgress - prevEstimated;
 
-            // Spotify API progress packets are often delayed by 0.3s - 1.5s due to server latency.
             // If the packet is slightly behind our estimated playback time (diff < 0),
             // NEVER pull the anchor backwards! Keep it at prevEstimated:
-            if (diff < 0 && Math.abs(diff) < 4.0) {
+            if (diff < 0 && Math.abs(diff) < 2.5) {
               calibratedProgress = prevEstimated;
-            } else if (diff > 0 && diff < 2.5) {
-              // Slightly ahead: softly catch up forward without a sudden jump
-              calibratedProgress = prevEstimated + diff * 0.35;
             } else {
-              // Large deliberate seek (> 4s): sync directly
+              // Keep tightly in sync with Spotify's live playback
               calibratedProgress = exactSpotifyProgress;
             }
           }
@@ -229,6 +270,24 @@ export function useAudio() {
 
           if (playback.is_playing && audioRef.current && !audioRef.current.paused) {
             audioRef.current.pause();
+          }
+
+          // Sync loop / repeat mode from Spotify if user hasn't toggled recently (debounce 2.5s)
+          if (playback.repeat_state !== undefined && Date.now() - lastUserLoopActionTimeRef.current > 2500) {
+            const isCurrentlyTrackRepeat = playback.repeat_state === 'track';
+            if (isLoopingRef.current !== isCurrentlyTrackRepeat) {
+              isLoopingRef.current = isCurrentlyTrackRepeat;
+              setIsLooping(isCurrentlyTrackRepeat);
+            }
+          }
+
+          // Sync shuffle mode from Spotify if user hasn't toggled recently
+          if (playback.shuffle_state !== undefined && Date.now() - lastUserShuffleActionTimeRef.current > 2500) {
+            const isCurrentlyShuffle = Boolean(playback.shuffle_state);
+            if (isShuffleRef.current !== isCurrentlyShuffle) {
+              isShuffleRef.current = isCurrentlyShuffle;
+              setIsShuffle(isCurrentlyShuffle);
+            }
           }
         } else {
           setIsSpotifyLive(false);
@@ -294,12 +353,7 @@ export function useAudio() {
     };
 
     const onError = () => {
-      // If external audio source fails or CORS blocks it, switch smoothly to procedural harmonic synth
-      console.warn('Falling back to warm procedural harmonic audio synthesis for track:', currentTrack?.title);
-      setIsUsingProceduralFallback(true);
-      if (isPlaying) {
-        startProceduralMusic(currentTrack?.synthPreset, effectiveVolume);
-      }
+      // Audio source error handler (app controls Spotify by default)
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -350,17 +404,15 @@ export function useAudio() {
   }, [effectiveVolume, isCrackleEnabled, isPlaying]);
 
   const playAudio = useCallback((forceTrackUri = null) => {
-    getAudioContext();
-    playNeedleDropSFX();
-
     stopVinylCrackle();
+    stopProceduralMusic();
 
     if (isSpotifyAuthenticated()) {
       const targetUri = forceTrackUri || currentTrack?.uri;
       spotifyStartGiftPlaylist(targetUri)
         .then(() => {
-          spotifySetShuffle(isShuffle).catch(() => {});
-          spotifySetRepeat(isLooping ? 'track' : 'off').catch(() => {});
+          spotifySetShuffle(isShuffleRef.current).catch(() => { });
+          spotifySetRepeat(isLoopingRef.current ? 'track' : 'off').catch(() => { });
         })
         .catch((err) =>
           console.log('Spotify start playlist notice:', err)
@@ -368,30 +420,24 @@ export function useAudio() {
     }
 
     const audio = audioRef.current;
-    if (audio.src && !isUsingProceduralFallback) {
+    if (audio.src) {
       audio
         .play()
         .then(() => {
           setIsPlaying(true);
         })
         .catch(() => {
-          // Fallback to procedural synth
-          setIsUsingProceduralFallback(true);
-          startProceduralMusic(currentTrack?.synthPreset, effectiveVolume);
           setIsPlaying(true);
         });
     } else {
-      setIsUsingProceduralFallback(true);
-      startProceduralMusic(currentTrack?.synthPreset, effectiveVolume);
       setIsPlaying(true);
     }
-  }, [effectiveVolume, isCrackleEnabled, isUsingProceduralFallback, currentTrack]);
+  }, [currentTrack]);
 
   const pauseAudio = useCallback(() => {
     if (isSpotifyAuthenticated()) {
       spotifyPause().catch((err) => console.log('Spotify playback notice:', err));
     }
-    playNeedleLiftSFX();
     stopVinylCrackle();
     stopProceduralMusic();
     if (audioRef.current) {
@@ -410,6 +456,28 @@ export function useAudio() {
 
   const nextTrack = useCallback(() => {
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
+
+    // Check if Side A finished (reached the end of Side A without shuffle)
+    if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1 && !isShuffleRef.current) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => { });
+      }
+      setIsPlaying(false);
+      setIsSideAEnded(true);
+      return;
+    }
+
+
+    // Check if Side A finished (reached the end of Side A without shuffle)
+    if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1 && !isShuffleRef.current) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => { });
+      }
+      setIsPlaying(false);
+      setIsSideAEnded(true);
+      return;
+    }
+
     let nextIdx;
     if (isShuffle) {
       nextIdx = Math.floor(Math.random() * list.length);
@@ -440,7 +508,6 @@ export function useAudio() {
     };
 
     setIsPlaying(true);
-    playNeedleDropSFX();
 
     if (isSpotifyAuthenticated() && targetTrack?.uri) {
       spotifyStartGiftPlaylist(targetTrack.uri).catch((err) =>
@@ -448,14 +515,12 @@ export function useAudio() {
       );
     }
 
-    if (audioRef.current && targetTrack?.audioSrc && !isUsingProceduralFallback) {
+    if (audioRef.current && targetTrack?.audioSrc) {
       audioRef.current.src = targetTrack.audioSrc;
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    } else if (!isSpotifyAuthenticated()) {
-      startProceduralMusic(targetTrack?.synthPreset, effectiveVolume);
+      audioRef.current.play().catch(() => { });
     }
-  }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex, effectiveVolume, isUsingProceduralFallback]);
+  }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex]);
 
   const prevTrack = useCallback(() => {
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
@@ -468,7 +533,7 @@ export function useAudio() {
         isPlaying: isPlaying,
       };
       if (isSpotifyAuthenticated()) {
-        spotifySeek(0).catch(() => {});
+        spotifySeek(0).catch(() => { });
       }
       return;
     }
@@ -495,7 +560,6 @@ export function useAudio() {
     };
 
     setIsPlaying(true);
-    playNeedleDropSFX();
 
     if (isSpotifyAuthenticated() && targetTrack?.uri) {
       spotifyStartGiftPlaylist(targetTrack.uri).catch((err) =>
@@ -503,24 +567,20 @@ export function useAudio() {
       );
     }
 
-    if (audioRef.current && targetTrack?.audioSrc && !isUsingProceduralFallback) {
+    if (audioRef.current && targetTrack?.audioSrc) {
       audioRef.current.src = targetTrack.audioSrc;
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    } else if (!isSpotifyAuthenticated()) {
-      startProceduralMusic(targetTrack?.synthPreset, effectiveVolume);
+      audioRef.current.play().catch(() => { });
     }
-  }, [activeSide, playlistSideA, playlistSideB, currentTime, currentTrackIndex, isPlaying, effectiveVolume, isUsingProceduralFallback]);
+  }, [activeSide, playlistSideA, playlistSideB, currentTime, currentTrackIndex, isPlaying]);
 
   const handleTrackEnd = useCallback(() => {
     if (isLooping) {
-      if (audioRef.current && audioRef.current.src && !isUsingProceduralFallback) {
+      if (audioRef.current && audioRef.current.src) {
         audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       } else if (isSpotifyAuthenticated()) {
-        spotifySeek(0).catch(() => {});
-      } else {
-        startProceduralMusic(currentTrack?.synthPreset, effectiveVolume);
+        spotifySeek(0).catch(() => { });
       }
       setCurrentTime(0);
       spotifyAnchorRef.current = {
@@ -528,10 +588,24 @@ export function useAudio() {
         clientTimestamp: performance.now(),
         isPlaying: true,
       };
+    } else if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => { });
+      }
+      setIsPlaying(false);
+      setIsSideAEnded(true);
+      setCurrentTime(0);
+    } else if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => { });
+      }
+      setIsPlaying(false);
+      setIsSideAEnded(true);
+      setCurrentTime(0);
     } else {
       nextTrack();
     }
-  }, [isLooping, nextTrack, isUsingProceduralFallback, currentTrack, effectiveVolume]);
+  }, [isLooping, nextTrack, playlistSideA.length]);
 
   const seek = useCallback(
     (fractionOrSeconds) => {
@@ -551,14 +625,15 @@ export function useAudio() {
         clientTimestamp: performance.now(),
         isPlaying: isPlaying,
       };
-      if (audioRef.current && !isUsingProceduralFallback) {
+      if (audioRef.current) {
         audioRef.current.currentTime = targetSec;
       }
     },
-    [duration, isUsingProceduralFallback, isPlaying]
+    [duration, isPlaying]
   );
 
   const flipSide = useCallback(() => {
+    setIsSideAEnded(false);
     const nextSide = activeSide === 'A' ? 'B' : 'A';
     const targetList = nextSide === 'A' ? playlistSideA : playlistSideB;
     const targetTrack = targetList[0];
@@ -582,23 +657,19 @@ export function useAudio() {
       isPlaying: isPlaying,
     };
 
-    playNeedleDropSFX();
-
     if (isPlaying) {
       if (isSpotifyAuthenticated() && targetTrack?.uri) {
         spotifyStartGiftPlaylist(targetTrack.uri).catch((err) =>
           console.log('Spotify flip side notice:', err)
         );
       }
-      if (audioRef.current && targetTrack?.audioSrc && !isUsingProceduralFallback) {
+      if (audioRef.current && targetTrack?.audioSrc) {
         audioRef.current.src = targetTrack.audioSrc;
         audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
-      } else if (!isSpotifyAuthenticated()) {
-        startProceduralMusic(targetTrack?.synthPreset, effectiveVolume);
+        audioRef.current.play().catch(() => { });
       }
     }
-  }, [activeSide, playlistSideA, playlistSideB, isPlaying, effectiveVolume, isUsingProceduralFallback]);
+  }, [activeSide, playlistSideA, playlistSideB, isPlaying]);
 
   const setVolume = useCallback((val) => {
     const clamped = Math.max(0, Math.min(1, val));
@@ -613,23 +684,29 @@ export function useAudio() {
   }, []);
 
   const toggleLoop = useCallback(() => {
-    setIsLooping((prev) => {
-      const next = !prev;
-      if (isSpotifyAuthenticated()) {
-        spotifySetRepeat(next ? 'track' : 'off').catch(() => {});
-      }
-      return next;
-    });
+    lastUserLoopActionTimeRef.current = Date.now();
+    const next = !isLoopingRef.current;
+    isLoopingRef.current = next;
+    setIsLooping(next);
+
+    if (isSpotifyAuthenticated()) {
+      spotifySetRepeat(next ? 'track' : 'off').catch((err) =>
+        console.warn('Spotify set repeat notice:', err)
+      );
+    }
   }, []);
 
   const toggleShuffle = useCallback(() => {
-    setIsShuffle((prev) => {
-      const next = !prev;
-      if (isSpotifyAuthenticated()) {
-        spotifySetShuffle(next).catch(() => {});
-      }
-      return next;
-    });
+    lastUserShuffleActionTimeRef.current = Date.now();
+    const next = !isShuffleRef.current;
+    isShuffleRef.current = next;
+    setIsShuffle(next);
+
+    if (isSpotifyAuthenticated()) {
+      spotifySetShuffle(next).catch((err) =>
+        console.warn('Spotify set shuffle notice:', err)
+      );
+    }
   }, []);
 
   const toggleCrackle = useCallback(() => {
@@ -699,5 +776,7 @@ export function useAudio() {
     toggleShuffle,
     toggleCrackle,
     addCustomTrack,
+    isSideAEnded,
+    setIsSideAEnded,
   };
 }

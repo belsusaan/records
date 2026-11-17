@@ -91,8 +91,11 @@ export default function LyricsBooklet({
   useEffect(() => {
     if (!lyricsToDisplay || lyricsToDisplay.length === 0) return;
 
+    // A subtle 180ms lead time ensures the active line highlights right as the first syllable is uttered
+    const effectiveTime = currentTime + 0.18;
+
     // If current time is prior to the first lyric line onset, we are in the intro!
-    if (currentTime < lyricsToDisplay[0].time) {
+    if (effectiveTime < lyricsToDisplay[0].time) {
       if (currentTime < 2.0 || activeIdx <= 0) {
         setActiveIdx(-1);
         return;
@@ -101,7 +104,7 @@ export default function LyricsBooklet({
 
     let computedIndex = -1;
     for (let i = 0; i < lyricsToDisplay.length; i++) {
-      if (currentTime >= lyricsToDisplay[i].time) {
+      if (effectiveTime >= lyricsToDisplay[i].time) {
         computedIndex = i;
       }
     }

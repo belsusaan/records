@@ -7,6 +7,7 @@ import LyricsBooklet from './components/LyricsBooklet';
 import SpotifyGate from './components/SpotifyGate';
 import InstructionsModal from './components/InstructionsModal';
 import SpotifyModal from './components/SpotifyModal';
+import SideAEndedModal from './components/SideAEndedModal';
 import {
   handleSpotifyRedirect,
   isSpotifyAuthenticated,
@@ -65,6 +66,8 @@ export default function App() {
     isShuffle,
     toggleShuffle,
     isSpotifyLive,
+    isSideAEnded,
+    setIsSideAEnded,
   } = useAudio();
 
   const handleOpenGift = () => {
@@ -184,6 +187,19 @@ export default function App() {
         isConnected={isSpotifyAuth}
         spotifyUser={spotifyUser}
         onDisconnect={handleDisconnect}
+      />
+
+      {/* ================= MODAL: LADO A TERMINADO ================= */}
+      <SideAEndedModal
+        isOpen={isSideAEnded}
+        onClose={() => setIsSideAEnded(false)}
+        onFlipToSideB={() => {
+          setIsSideAEnded(false);
+          flipSide();
+          setTimeout(() => {
+            playAudio();
+          }, 350);
+        }}
       />
     </div>
   );

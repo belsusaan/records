@@ -127,6 +127,8 @@ export async function initiateSpotifyAuth(clientId) {
     'playlist-read-private',
     'playlist-read-collaborative',
     'streaming',
+    'playlist-modify-public',
+    'playlist-modify-private',
   ].join(' ');
 
   const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -215,6 +217,15 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
   try {
     let res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
     if (res.status === 204) return true;
+    if (res.status === 200 || res.status === 201) {
+      const text = await res.text();
+      if (!text || !text.trim()) return true;
+      try {
+        return JSON.parse(text);
+      } catch {
+        return true;
+      }
+    }
     if (res.status === 401) {
       // Try refresh once
       const newToken = await refreshSpotifyToken();
@@ -222,6 +233,15 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
         options.headers.Authorization = `Bearer ${newToken}`;
         res = await fetch(`https://api.spotify.com/v1${endpoint}`, options);
         if (res.status === 204) return true;
+        if (res.status === 200 || res.status === 201) {
+          const text = await res.text();
+          if (!text || !text.trim()) return true;
+          try {
+            return JSON.parse(text);
+          } catch {
+            return true;
+          }
+        }
         if (res.ok) return await res.json();
       }
       clearSpotifyTokens();
@@ -321,15 +341,50 @@ export async function spotifySeek(positionMs) {
   return await spotifyFetch(`/me/player/seek?position_ms=${Math.floor(positionMs)}`, 'PUT');
 }
 
-export async function spotifySetShuffle(state) {
-  return await spotifyFetch(`/me/player/shuffle?state=${Boolean(state)}`, 'PUT');
+export async function spotifySetShuffle(state, deviceId = null) {
+  let targetId = deviceId;
+  try {
+    const devices = (await spotifyGetDevices()) || [];
+    const active = devices.find((d) => d.is_active);
+    const target = active || devices[0];
+    if (target) {
+      targetId = target.id;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const query = targetId ? `?state=${Boolean(state)}&device_id=${targetId}` : `?state=${Boolean(state)}`;
+  let res = await spotifyFetch(`/me/player/shuffle${query}`, 'PUT');
+  if (!res && targetId) {
+    res = await spotifyFetch(`/me/player/shuffle?state=${Boolean(state)}`, 'PUT');
+  }
+  return res;
 }
 
-export async function spotifySetRepeat(state) {
+export async function spotifySetRepeat(state, deviceId = null) {
   // state: boolean | 'track' | 'off'
   // ONLY 'track' (repeat single song) or 'off' (no repeat). Never 'context' (playlist).
   const repeatMode = state === true || state === 'track' ? 'track' : 'off';
-  return await spotifyFetch(`/me/player/repeat?state=${repeatMode}`, 'PUT');
+  let targetId = deviceId;
+
+  try {
+    const devices = (await spotifyGetDevices()) || [];
+    const active = devices.find((d) => d.is_active);
+    const target = active || devices[0];
+    if (target) {
+      targetId = target.id;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const query = targetId ? `?state=${repeatMode}&device_id=${targetId}` : `?state=${repeatMode}`;
+  let res = await spotifyFetch(`/me/player/repeat${query}`, 'PUT');
+  if (!res && targetId) {
+    res = await spotifyFetch(`/me/player/repeat?state=${repeatMode}`, 'PUT');
+  }
+  return res;
 }
 
 export async function spotifyGetPlayback() {
@@ -338,4 +393,42 @@ export async function spotifyGetPlayback() {
 
 export async function spotifyGetUserProfile() {
   return await spotifyFetch('/me');
+}
+
+/**
+ * Follow / Save Playlist to User's Spotify Library
+ * PUT https://api.spotify.com/v1/playlists/{playlist_id}/followers
+ */
+export async function spotifyFollowPlaylist(playlistId = null) {
+  const effectiveId = playlistId || getStoredConfig().playlistId || DEFAULT_PLAYLIST_ID;
+  if (!effectiveId) return false;
+
+  try {
+    const res = await spotifyFetch(`/playlists/${effectiveId}/followers`, 'PUT', {
+      public: true,
+    });
+    return Boolean(res);
+  } catch (err) {
+    console.error('Error following playlist:', err);
+    return false;
+  }
+}
+
+/**
+ * Check if the user is already following the playlist
+ * GET https://api.spotify.com/v1/playlists/{playlist_id}/followers/contains
+ */
+export async function spotifyCheckFollowPlaylist(playlistId = null) {
+  const effectiveId = playlistId || getStoredConfig().playlistId || DEFAULT_PLAYLIST_ID;
+  if (!effectiveId) return false;
+
+  try {
+    const res = await spotifyFetch(`/playlists/${effectiveId}/followers/contains`);
+    if (Array.isArray(res) && typeof res[0] === 'boolean') {
+      return res[0];
+    }
+  } catch (err) {
+    // ignore
+  }
+  return false;
 }
