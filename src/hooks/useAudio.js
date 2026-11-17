@@ -189,6 +189,7 @@ export function useAudio() {
             });
           }
 
+          const isFirstSync = !isSpotifyLive;
           setIsSpotifyLive(true);
           setIsPlaying(Boolean(playback.is_playing));
           setDuration(trackDuration);
@@ -197,7 +198,7 @@ export function useAudio() {
           const prevAnchor = spotifyAnchorRef.current;
           let calibratedProgress = exactSpotifyProgress;
 
-          if (!trackChanged && prevAnchor.isPlaying && playback.is_playing) {
+          if (!trackChanged && !isFirstSync && prevAnchor.isPlaying && playback.is_playing) {
             const prevEstimated =
               prevAnchor.spotifyTime + (arrivalTime - prevAnchor.clientTimestamp) / 1000;
             const diff = exactSpotifyProgress - prevEstimated;
@@ -222,7 +223,7 @@ export function useAudio() {
             isPlaying: Boolean(playback.is_playing),
           };
 
-          if (trackChanged || !playback.is_playing) {
+          if (trackChanged || isFirstSync || !playback.is_playing) {
             setCurrentTime(calibratedProgress);
           }
 

@@ -5,6 +5,7 @@ import WordImageIntro from './components/WordImageIntro';
 import TurntableCard from './components/TurntableCard';
 import LyricsBooklet from './components/LyricsBooklet';
 import SpotifyGate from './components/SpotifyGate';
+import InstructionsModal from './components/InstructionsModal';
 import SpotifyModal from './components/SpotifyModal';
 import {
   handleSpotifyRedirect,
@@ -19,6 +20,7 @@ export default function App() {
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
   const [isSpotifyAuth, setIsSpotifyAuth] = useState(isSpotifyAuthenticated());
   const [spotifyUser, setSpotifyUser] = useState(null);
+  const [hasConfirmedInstructions, setHasConfirmedInstructions] = useState(false);
 
   // Prefetch lyrics in the background so all songs load instantly
   useEffect(() => {
@@ -76,12 +78,24 @@ export default function App() {
     setIsSpotifyAuth(false);
     setSpotifyUser(null);
     setIsGiftOpened(false);
+    setHasConfirmedInstructions(false);
   };
 
   // ================= PASO 0: BLOQUEO OBLIGATORIO DE SPOTIFY =================
   // Si no está autenticado en Spotify, se muestra ÚNICAMENTE la pantalla de acceso
   if (!isSpotifyAuth) {
     return <SpotifyGate onAuthSuccess={() => setIsSpotifyAuth(true)} />;
+  }
+
+  // ================= PASO 0.5: INSTRUCCIONES ANTES DE ENTRAR =================
+  // Cuadro con las instrucciones antes de mostrar la pantalla de la carta/imagen
+  if (!hasConfirmedInstructions) {
+    return (
+      <InstructionsModal
+        isOpen={true}
+        onConfirm={() => setHasConfirmedInstructions(true)}
+      />
+    );
   }
 
   // ================= PASO 1 Y 2: CARTA DE PAPEL Y TOCADISCOS =================
