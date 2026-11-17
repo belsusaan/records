@@ -37,89 +37,35 @@ export function playNeedleLiftSFX() {
 }
 
 /**
- * Realistic Paper Crumple SFX Generator
- * Uses Web Audio API to synthesize authentic, tactile paper creasing,
- * folding friction, and micro-crease snaps as the paper turns into a ball.
+ * Paper Crumple SFX Player
+ * Plays the authentic paper crumpling sound effect (from SonidosChingonesFX / C7k1OKWGhZI)
+ * with multi-format fallback (.webm / .m4a).
  */
-let cachedCrumpleBuffer = null;
+let crumpleAudio = null;
 
-export function playPaperCrumpleSFX(volume = 0.85) {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
+export function playPaperCrumpleSFX(volume = 0.95) {
   try {
-    const sampleRate = ctx.sampleRate;
-    const duration = 2.1;
-    const totalSamples = Math.floor(sampleRate * duration);
+    if (!crumpleAudio) {
+      crumpleAudio = new Audio();
+      crumpleAudio.preload = 'auto';
 
-    // Pre-render or compute buffer
-    if (!cachedCrumpleBuffer || cachedCrumpleBuffer.sampleRate !== sampleRate) {
-      cachedCrumpleBuffer = ctx.createBuffer(1, totalSamples, sampleRate);
-      const data = cachedCrumpleBuffer.getChannelData(0);
-
-      // 1. Paper surface friction base layer (pink noise with envelope)
-      let b0 = 0, b1 = 0, b2 = 0;
-      for (let i = 0; i < totalSamples; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555;
-        b1 = 0.99332 * b1 + white * 0.075;
-        b2 = 0.969 * b2 + white * 0.153;
-        const pink = b0 + b1 + b2 + white * 0.536;
-        const progress = i / totalSamples;
-        // Swell during deformation, peak around 60%, gentle fadeout
-        const env = Math.pow(Math.sin(progress * Math.PI), 1.3) * (0.16 + 0.08 * Math.sin(progress * 22));
-        data[i] = pink * 0.09 * env;
-      }
-
-      // 2. Micro-crease snap / crunch events (rapid avalanche clicks)
-      const numSnaps = 175;
-      for (let s = 0; s < numSnaps; s++) {
-        const u = Math.random();
-        const time = 0.08 + Math.pow(u, 1.25) * 1.85;
-        const startSample = Math.floor(time * sampleRate);
-        const snapDuration = 0.004 + Math.random() * 0.022; // 4ms - 26ms
-        const snapSamples = Math.floor(snapDuration * sampleRate);
-        const freq = 1200 + Math.random() * 4800; // Resonant frequency of paper crease
-        const amp = 0.06 + Math.pow(Math.random(), 2.8) * 0.82;
-
-        for (let j = 0; j < snapSamples && (startSample + j) < totalSamples; j++) {
-          const dt = j / sampleRate;
-          const decay = Math.exp(-dt * (140 + Math.random() * 120));
-          const click = Math.sin(2 * Math.PI * freq * dt) * 0.45 + (Math.random() * 2 - 1) * 0.55;
-          data[startSample + j] += click * amp * decay;
-        }
-      }
-
-      // 3. Normalize peak to prevent clipping
-      let maxPeak = 0;
-      for (let i = 0; i < totalSamples; i++) {
-        const abs = Math.abs(data[i]);
-        if (abs > maxPeak) maxPeak = abs;
-      }
-      if (maxPeak > 0) {
-        const factor = 0.78 / maxPeak;
-        for (let i = 0; i < totalSamples; i++) {
-          data[i] *= factor;
-        }
+      if (crumpleAudio.canPlayType('audio/webm; codecs="opus"')) {
+        crumpleAudio.src = '/audio/paper-crumple.webm';
+      } else if (crumpleAudio.canPlayType('audio/mp4; codecs="mp4a.40.2"')) {
+        crumpleAudio.src = '/audio/paper-crumple.m4a';
+      } else {
+        crumpleAudio.src = '/audio/paper-crumple.webm';
       }
     }
 
-    // Playback through highpass + gain node
-    const source = ctx.createBufferSource();
-    source.buffer = cachedCrumpleBuffer;
-
-    const highpass = ctx.createBiquadFilter();
-    highpass.type = 'highpass';
-    highpass.frequency.value = 180; // Cut low boom, keep dry paper crackle
-
-    const gainNode = ctx.createGain();
-    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-
-    source.connect(highpass);
-    highpass.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    source.start(ctx.currentTime);
+    crumpleAudio.currentTime = 0;
+    crumpleAudio.volume = Math.max(0, Math.min(1, volume));
+    const playPromise = crumpleAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn('Paper crumple audio play notice:', err);
+      });
+    }
   } catch (err) {
     console.warn('Paper crumple SFX error:', err);
   }

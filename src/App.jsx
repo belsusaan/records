@@ -193,13 +193,6 @@ export default function App() {
       <SideAEndedModal
         isOpen={isSideAEnded}
         onClose={() => setIsSideAEnded(false)}
-        onFlipToSideB={() => {
-          setIsSideAEnded(false);
-          flipSide();
-          setTimeout(() => {
-            playAudio();
-          }, 350);
-        }}
       />
     </div>
   );

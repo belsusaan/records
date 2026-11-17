@@ -43,6 +43,7 @@ export function useAudio() {
   const currentTrackIndexRef = useRef(currentTrackIndex);
   const lastUserLoopActionTimeRef = useRef(0);
   const lastUserShuffleActionTimeRef = useRef(0);
+  const hasShownSideAEndedRef = useRef(false);
 
   useEffect(() => {
     isLoopingRef.current = isLooping;
@@ -78,6 +79,24 @@ export function useAudio() {
   // Helper to get effective volume
   const effectiveVolume = isMuted ? 0 : volume;
 
+  // Handle transition when Side A ends: pause, rewind to 0:00, and show modal once
+  const triggerSideAEnded = useCallback(() => {
+    if (hasShownSideAEndedRef.current) return;
+    hasShownSideAEndedRef.current = true;
+
+    if (isSpotifyAuthenticated()) {
+      spotifyPause().catch(() => {});
+      spotifySeek(0).catch(() => {});
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setIsSideAEnded(true);
+  }, []);
+
   // Continuous smooth progress ticker
   useEffect(() => {
     if (!isPlaying) return;
@@ -97,8 +116,9 @@ export function useAudio() {
           duration > 0 &&
           prev >= duration - 0.6
         ) {
-          pauseAudio();
-          setIsSideAEnded(true);
+          if (!hasShownSideAEndedRef.current) {
+            triggerSideAEnded();
+          }
           return duration;
         }
 
@@ -194,6 +214,9 @@ export function useAudio() {
 
           let trackChanged = false;
           if (idxA !== -1) {
+            if (idxA < playlistSideA.length - 1) {
+              hasShownSideAEndedRef.current = false;
+            }
             activeSideRef.current = 'A';
             currentTrackIndexRef.current = idxA;
             setActiveSide((curr) => {
@@ -212,33 +235,49 @@ export function useAudio() {
             });
           } else if (idxB !== -1) {
             // If the user was playing Side A, and playback transitions to Side B:
-            // Halt playback immediately and show the "Lado A terminado" modal!
             if (activeSideRef.current === 'A') {
-              if (isSpotifyAuthenticated()) {
-                spotifyPause().catch(() => {});
+              if (!hasShownSideAEndedRef.current) {
+                // Pause immediately, rewind to 0:00 so no intro is cut off, and show popup once:
+                triggerSideAEnded();
+                return;
+              } else {
+                // The popup was already shown and dismissed with "Entendido".
+                // If user didn't flip the disc but hits play, do NOT block or re-pause:
+                activeSideRef.current = 'B';
+                currentTrackIndexRef.current = idxB;
+                setActiveSide((curr) => {
+                  if (curr !== 'B') {
+                    trackChanged = true;
+                    return 'B';
+                  }
+                  return curr;
+                });
+                setCurrentTrackIndex((curr) => {
+                  if (curr !== idxB) {
+                    trackChanged = true;
+                    return idxB;
+                  }
+                  return curr;
+                });
               }
-              setIsPlaying(false);
-              setIsSideAEnded(true);
-              setCurrentTime(0);
-              return;
+            } else {
+              activeSideRef.current = 'B';
+              currentTrackIndexRef.current = idxB;
+              setActiveSide((curr) => {
+                if (curr !== 'B') {
+                  trackChanged = true;
+                  return 'B';
+                }
+                return curr;
+              });
+              setCurrentTrackIndex((curr) => {
+                if (curr !== idxB) {
+                  trackChanged = true;
+                  return idxB;
+                }
+                return curr;
+              });
             }
-
-            activeSideRef.current = 'B';
-            currentTrackIndexRef.current = idxB;
-            setActiveSide((curr) => {
-              if (curr !== 'B') {
-                trackChanged = true;
-                return 'B';
-              }
-              return curr;
-            });
-            setCurrentTrackIndex((curr) => {
-              if (curr !== idxB) {
-                trackChanged = true;
-                return idxB;
-              }
-              return curr;
-            });
           }
 
           const isFirstSync = !isSpotifyLive;
@@ -415,15 +454,31 @@ export function useAudio() {
     stopProceduralMusic();
 
     if (isSpotifyAuthenticated()) {
-      const targetUri = forceTrackUri || currentTrack?.uri;
-      spotifyStartGiftPlaylist(targetUri)
-        .then(() => {
-          spotifySetShuffle(isShuffleRef.current).catch(() => { });
-          spotifySetRepeat(isLoopingRef.current ? 'track' : 'off').catch(() => { });
+      const currentList = activeSideRef.current === 'A' ? playlistSideA : playlistSideB;
+      const targetTrack = currentList[currentTrackIndexRef.current] || currentTrack;
+      const targetUri = forceTrackUri || targetTrack?.uri;
+
+      // Check current Spotify playback first:
+      spotifyGetPlayback()
+        .then((pb) => {
+          const isCurrentTrackLoaded = pb?.item?.uri && pb.item.uri === targetUri;
+          if (pb && isCurrentTrackLoaded && !pb.is_playing) {
+            // Resume natively without restarting the playlist or resetting position
+            spotifyPlay().catch(() => {
+              spotifyStartGiftPlaylist(targetUri).catch(() => {});
+            });
+          } else {
+            spotifyStartGiftPlaylist(targetUri)
+              .then(() => {
+                spotifySetShuffle(isShuffleRef.current).catch(() => {});
+                spotifySetRepeat(isLoopingRef.current ? 'track' : 'off').catch(() => {});
+              })
+              .catch((err) => console.log('Spotify start playlist notice:', err));
+          }
         })
-        .catch((err) =>
-          console.log('Spotify start playlist notice:', err)
-        );
+        .catch(() => {
+          spotifyStartGiftPlaylist(targetUri).catch(() => {});
+        });
     }
 
     const audio = audioRef.current;
@@ -439,7 +494,7 @@ export function useAudio() {
     } else {
       setIsPlaying(true);
     }
-  }, [currentTrack]);
+  }, [currentTrack, playlistSideA, playlistSideB]);
 
   const pauseAudio = useCallback(() => {
     if (isSpotifyAuthenticated()) {
@@ -466,11 +521,9 @@ export function useAudio() {
 
     // Check if Side A finished (reached the end of Side A without shuffle)
     if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1 && !isShuffleRef.current) {
-      if (isSpotifyAuthenticated()) {
-        spotifyPause().catch(() => {});
+      if (!hasShownSideAEndedRef.current) {
+        triggerSideAEnded();
       }
-      setIsPlaying(false);
-      setIsSideAEnded(true);
       return;
     }
 
@@ -517,7 +570,7 @@ export function useAudio() {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => { });
     }
-  }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex]);
+  }, [activeSide, playlistSideA, playlistSideB, isShuffle, currentTrackIndex, triggerSideAEnded]);
 
   const prevTrack = useCallback(() => {
     const list = activeSide === 'A' ? playlistSideA : playlistSideB;
@@ -587,16 +640,13 @@ export function useAudio() {
         isPlaying: true,
       };
     } else if (activeSideRef.current === 'A' && currentTrackIndexRef.current === playlistSideA.length - 1) {
-      if (isSpotifyAuthenticated()) {
-        spotifyPause().catch(() => {});
+      if (!hasShownSideAEndedRef.current) {
+        triggerSideAEnded();
       }
-      setIsPlaying(false);
-      setIsSideAEnded(true);
-      setCurrentTime(0);
     } else {
       nextTrack();
     }
-  }, [isLooping, nextTrack, playlistSideA.length]);
+  }, [isLooping, nextTrack, playlistSideA.length, triggerSideAEnded]);
 
   const seek = useCallback(
     (fractionOrSeconds) => {
@@ -625,6 +675,7 @@ export function useAudio() {
 
   const flipSide = useCallback(() => {
     setIsSideAEnded(false);
+    hasShownSideAEndedRef.current = false;
     const nextSide = activeSideRef.current === 'A' ? 'B' : 'A';
     activeSideRef.current = nextSide;
     currentTrackIndexRef.current = 0;
