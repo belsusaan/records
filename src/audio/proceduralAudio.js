@@ -58,12 +58,18 @@ export function playPaperCrumpleSFX(volume = 0.95) {
       }
     }
 
-    crumpleAudio.currentTime = 0;
-    crumpleAudio.volume = Math.max(0, Math.min(1, volume));
-    const playPromise = crumpleAudio.play();
+    // Clone the audio so overlapping or repeated crumple actions play cleanly every time
+    const sound = crumpleAudio.cloneNode();
+    sound.volume = Math.max(0, Math.min(1, volume));
+    const playPromise = sound.play();
     if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn('Paper crumple audio play notice:', err);
+      playPromise.catch(() => {
+        // Fallback to primary instance if cloning playback is restricted
+        try {
+          crumpleAudio.currentTime = 0;
+          crumpleAudio.volume = Math.max(0, Math.min(1, volume));
+          crumpleAudio.play().catch(() => {});
+        } catch (e) {}
       });
     }
   } catch (err) {

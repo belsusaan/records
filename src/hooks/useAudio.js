@@ -122,31 +122,61 @@ export function useAudio() {
           return duration;
         }
 
-        if (duration > 0 && prev >= duration) {
-          return prev;
+        // If on the last track of Side B (Wonderwall) and playback reaches the end of the song:
+        if (
+          activeSideRef.current === 'B' &&
+          currentTrackIndexRef.current === playlistSideB.length - 1 &&
+          !isLoopingRef.current &&
+          duration > 0 &&
+          prev >= duration - 0.6
+        ) {
+          if (isSpotifyAuthenticated()) {
+            spotifyPause().catch(() => {});
+          }
+          if (audioRef.current) {
+            audioRef.current.pause();
+          }
+          setIsPlaying(false);
+          return duration;
         }
 
-        // If Spotify is live, calculate from calibrated anchor with monotonic forward guarantee
+        // If Spotify is live, calculate from calibrated anchor with monotonic forward guarantee & loop support
         if (isSpotifyLive && spotifyAnchorRef.current.isPlaying) {
           const anchor = spotifyAnchorRef.current;
           const elapsed = (now - anchor.clientTimestamp) / 1000;
           const currentEst = anchor.spotifyTime + elapsed;
 
-          // Prevent backward rubberbanding:
-          // If Spotify's packet was slightly delayed and currentEst is behind client's current time (< 4s diff),
-          // DO NOT jump backwards! Advance smoothly forward at normal 1x speed:
-          if (currentEst < prev && (prev - currentEst) < 4.0) {
+          // If track looped or restarted (anchor jumped back near 0):
+          if (currentEst < prev - 3.5 || (prev >= duration - 1.0 && currentEst < 5.0)) {
+            return currentEst;
+          }
+
+          if (duration > 0 && prev >= duration) {
+            if (isLoopingRef.current) {
+              return currentEst < duration ? currentEst : 0;
+            }
+            return prev;
+          }
+
+          // Prevent backward micro-rubberbanding: only smooth minor network delays (< 2.5s)
+          if (currentEst < prev && (prev - currentEst) < 2.5) {
             return prev + deltaSec;
           }
           return currentEst;
         } else {
+          if (duration > 0 && prev >= duration) {
+            if (isLoopingRef.current) {
+              return 0;
+            }
+            return prev;
+          }
           return prev + deltaSec;
         }
       });
     }, 100);
 
     return () => clearInterval(ticker);
-  }, [isPlaying, isSpotifyLive, duration]);
+  }, [isPlaying, isSpotifyLive, duration, playlistSideA.length, playlistSideB.length, triggerSideAEnded]);
 
   // Ensure Spotify starts with shuffle and repeat deactivated (off) by default
   const hasEnforcedInitialModesRef = useRef(false);
@@ -278,6 +308,16 @@ export function useAudio() {
                 return curr;
               });
             }
+          } else {
+            // Track playing in Spotify is outside our playlist
+            // If Side B just ended on Wonderwall, pause so Spotify doesn't autoplay outside tracks:
+            if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1) {
+              if (isSpotifyAuthenticated()) {
+                spotifyPause().catch(() => {});
+              }
+              setIsPlaying(false);
+              return;
+            }
           }
 
           const isFirstSync = !isSpotifyLive;
@@ -288,15 +328,21 @@ export function useAudio() {
           // Calibrate anchor smoothly without jumps
           const prevAnchor = spotifyAnchorRef.current;
           let calibratedProgress = exactSpotifyProgress;
+          let isLoopOrRewind = false;
 
           if (!trackChanged && !isFirstSync && prevAnchor.isPlaying && playback.is_playing) {
             const prevEstimated =
               prevAnchor.spotifyTime + (arrivalTime - prevAnchor.clientTimestamp) / 1000;
             const diff = exactSpotifyProgress - prevEstimated;
 
+            // Detect if track looped back to start or user seeked backwards
+            isLoopOrRewind =
+              (prevAnchor.spotifyTime > 5.0 && exactSpotifyProgress < 4.0) ||
+              (exactSpotifyProgress < prevEstimated - 4.0);
+
             // If the packet is slightly behind our estimated playback time (diff < 0),
-            // NEVER pull the anchor backwards! Keep it at prevEstimated:
-            if (diff < 0 && Math.abs(diff) < 2.5) {
+            // NEVER pull the anchor backwards! Keep it at prevEstimated (unless looping or rewinding):
+            if (!isLoopOrRewind && diff < 0 && Math.abs(diff) < 2.5) {
               calibratedProgress = prevEstimated;
             } else {
               // Keep tightly in sync with Spotify's live playback
@@ -310,7 +356,7 @@ export function useAudio() {
             isPlaying: Boolean(playback.is_playing),
           };
 
-          if (trackChanged || isFirstSync || !playback.is_playing) {
+          if (trackChanged || isFirstSync || !playback.is_playing || isLoopOrRewind) {
             setCurrentTime(calibratedProgress);
           }
 
@@ -395,7 +441,13 @@ export function useAudio() {
     };
 
     const onAudioEnded = () => {
-      handleTrackEnd();
+      if (isLoopingRef.current) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        setCurrentTime(0);
+      } else {
+        handleTrackEnd();
+      }
     };
 
     const onError = () => {
@@ -527,6 +579,18 @@ export function useAudio() {
       return;
     }
 
+    // Check if Side B finished (reached the end of Wonderwall without shuffle)
+    if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1 && !isShuffleRef.current) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => {});
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+      return;
+    }
+
     let nextIdx;
     if (isShuffle) {
       nextIdx = Math.floor(Math.random() * list.length);
@@ -643,10 +707,19 @@ export function useAudio() {
       if (!hasShownSideAEndedRef.current) {
         triggerSideAEnded();
       }
+    } else if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1) {
+      if (isSpotifyAuthenticated()) {
+        spotifyPause().catch(() => {});
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+      setCurrentTime(duration);
     } else {
       nextTrack();
     }
-  }, [isLooping, nextTrack, playlistSideA.length, triggerSideAEnded]);
+  }, [isLooping, nextTrack, playlistSideA.length, playlistSideB.length, duration, triggerSideAEnded]);
 
   const seek = useCallback(
     (fractionOrSeconds) => {

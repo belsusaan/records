@@ -10,22 +10,23 @@ import { playPaperCrumpleSFX } from '../audio/proceduralAudio';
  */
 export default function WordImageIntro({ isOpen, onOpen }) {
   const [transitioning, setTransitioning] = useState(false);
-  const hasPlayedSoundRef = useRef(false);
+  const lastSoundTimeRef = useRef(0);
 
   const handleStateChange = useCallback(
     (state) => {
-      if (state === 'holding' && !hasPlayedSoundRef.current) {
-        hasPlayedSoundRef.current = true;
-        playPaperCrumpleSFX();
+      // Play the authentic crumple SFX every time the paper is being crumpled
+      if (state === 'holding' || state === 'crumpled') {
+        const now = Date.now();
+        // 250ms throttle prevents rapid stutter while ensuring every touch/crumple sounds
+        if (now - lastSoundTimeRef.current > 250) {
+          lastSoundTimeRef.current = now;
+          playPaperCrumpleSFX();
+        }
       }
 
       if (transitioning || isOpen) return;
 
       if (state === 'crumpled') {
-        if (!hasPlayedSoundRef.current) {
-          hasPlayedSoundRef.current = true;
-          playPaperCrumpleSFX();
-        }
         setTransitioning(true);
         // Small delay so user sees the crumpled ball before transition
         setTimeout(() => {
