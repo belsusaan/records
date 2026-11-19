@@ -12,6 +12,7 @@ import {
   handleSpotifyRedirect,
   isSpotifyAuthenticated,
   spotifyGetUserProfile,
+  clearSpotifyTokens,
 } from './services/spotify';
 import { prefetchPlaylistLyrics } from './services/lyricsService';
 import { PLAYLIST_SIDE_A, PLAYLIST_SIDE_B } from './data/playlist';
@@ -33,16 +34,25 @@ export default function App() {
     async function processSpotifyAuth() {
       const token = await handleSpotifyRedirect();
       if (token || isSpotifyAuthenticated()) {
-        setIsSpotifyAuth(true);
-        // Do NOT skip the paper intro: user will see the paper crumple now that they are authenticated!
         try {
           const profile = await spotifyGetUserProfile();
           if (profile?.display_name) {
+            setIsSpotifyAuth(true);
             setSpotifyUser(profile.display_name);
+          } else {
+            console.warn('Spotify profile unavailable or token expired; clearing invalid session');
+            clearSpotifyTokens();
+            setIsSpotifyAuth(false);
+            setSpotifyUser(null);
           }
         } catch (e) {
           console.log('Error fetching Spotify profile:', e);
+          clearSpotifyTokens();
+          setIsSpotifyAuth(false);
+          setSpotifyUser(null);
         }
+      } else {
+        setIsSpotifyAuth(false);
       }
     }
     processSpotifyAuth();

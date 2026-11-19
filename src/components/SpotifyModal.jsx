@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, X, ExternalLink, Key, LogOut, Check } from 'lucide-react';
+import { Radio, X, ExternalLink, Key, LogOut, Check, RefreshCw } from 'lucide-react';
 import {
   getStoredConfig,
   saveSpotifyConfig,
@@ -159,8 +159,19 @@ export default function SpotifyModal({
 
             <button
               type="button"
+              onClick={async () => {
+                clearSpotifyTokens();
+                await initiateSpotifyAuth();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#1db954] hover:bg-[#1ed760] text-[#0a0a0a] font-dongle text-2xl font-bold cursor-pointer transition-colors shadow-md leading-none"
+            >
+              <RefreshCw className="w-5 h-5 text-[#0a0a0a]" /> Reconectar con Spotify
+            </button>
+
+            <button
+              type="button"
               onClick={handleDisconnect}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#92374D] hover:bg-[#a64259] text-[#F4F1DE] border border-[#EEABC4]/30 font-dongle text-2xl font-bold cursor-pointer transition-colors shadow-md"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-[#92374D] hover:bg-[#a64259] text-[#F4F1DE] border border-[#EEABC4]/30 font-dongle text-2xl font-bold cursor-pointer transition-colors shadow-md leading-none"
             >
               <LogOut className="w-5 h-5" /> Desconectar de Spotify
             </button>
