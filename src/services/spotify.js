@@ -129,6 +129,8 @@ export async function initiateSpotifyAuth(clientId) {
     'streaming',
     'playlist-modify-public',
     'playlist-modify-private',
+    'user-read-private',
+    'user-read-email',
   ].join(' ');
 
   const authUrl = new URL('https://accounts.spotify.com/authorize');

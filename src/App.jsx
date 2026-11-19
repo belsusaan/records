@@ -34,22 +34,22 @@ export default function App() {
     async function processSpotifyAuth() {
       const token = await handleSpotifyRedirect();
       if (token || isSpotifyAuthenticated()) {
+        setIsSpotifyAuth(true);
         try {
           const profile = await spotifyGetUserProfile();
-          if (profile?.display_name) {
-            setIsSpotifyAuth(true);
-            setSpotifyUser(profile.display_name);
-          } else {
-            console.warn('Spotify profile unavailable or token expired; clearing invalid session');
+          if (profile && !profile.error) {
+            setSpotifyUser(profile.display_name || profile.id || 'Millie');
+          } else if (profile?.status === 401 || profile?.error?.status === 401) {
+            console.warn('Spotify token rejected with 401; clearing session');
             clearSpotifyTokens();
             setIsSpotifyAuth(false);
             setSpotifyUser(null);
+          } else {
+            setSpotifyUser('Millie');
           }
         } catch (e) {
           console.log('Error fetching Spotify profile:', e);
-          clearSpotifyTokens();
-          setIsSpotifyAuth(false);
-          setSpotifyUser(null);
+          setSpotifyUser('Millie');
         }
       } else {
         setIsSpotifyAuth(false);
