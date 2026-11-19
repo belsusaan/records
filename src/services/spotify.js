@@ -193,7 +193,7 @@ export async function handleSpotifyRedirect() {
  */
 export async function spotifyFetch(endpoint, method = 'GET', body = null) {
   let { accessToken, expiresAt } = getStoredConfig();
-  
+
   if (!accessToken || Date.now() >= expiresAt) {
     const refreshed = await refreshSpotifyToken();
     if (refreshed) {
@@ -247,7 +247,22 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
       clearSpotifyTokens();
       return null;
     }
-    if (!res.ok) return null;
+    if (!res.ok) {
+      let errData = null;
+      try {
+        errData = await res.json();
+      } catch {
+        // ignore
+      }
+      return {
+        error: true,
+        status: res.status,
+        reason:
+          errData?.error?.reason ||
+          (res.status === 403 ? 'PREMIUM_REQUIRED' : res.status === 404 ? 'NO_ACTIVE_DEVICE' : null),
+        message: errData?.error?.message || res.statusText,
+      };
+    }
     return await res.json();
   } catch (e) {
     console.error('Spotify API fetch error:', e);
@@ -293,17 +308,18 @@ export async function spotifyStartGiftPlaylist(trackUri = null) {
     // ignore
   }
 
-  const activeDevice = devices.find((d) => d.is_active);
-  const targetDevice = activeDevice || devices[0];
-
-  if (!activeDevice && targetDevice) {
+  // If no devices initially, give Spotify 350ms to report background device
+  if (!devices || devices.length === 0) {
+    await new Promise((r) => setTimeout(r, 350));
     try {
-      await spotifyTransferPlayback(targetDevice.id, false);
-      await new Promise((r) => setTimeout(r, 250));
+      devices = (await spotifyGetDevices()) || [];
     } catch (e) {
-      console.warn('Device transfer notice:', e);
+      // ignore
     }
   }
+
+  const activeDevice = devices.find((d) => d.is_active);
+  const targetDevice = activeDevice || (devices && devices[0]);
 
   const query = targetDevice ? `?device_id=${targetDevice.id}` : '';
   const body = {
@@ -316,7 +332,20 @@ export async function spotifyStartGiftPlaylist(trackUri = null) {
     body.offset = { position: 0 };
   }
 
-  return await spotifyFetch(`/me/player/play${query}`, 'PUT', body);
+  let res = await spotifyFetch(`/me/player/play${query}`, 'PUT', body);
+
+  // Fallback: If context_uri fails (e.g. playlist permissions or mobile issue), try direct track URI
+  if (res?.error && trackUri) {
+    console.log('Falling back to direct track URI playback:', trackUri);
+    const directRes = await spotifyFetch(`/me/player/play${query}`, 'PUT', {
+      uris: [trackUri],
+    });
+    if (!directRes?.error) {
+      return directRes;
+    }
+  }
+
+  return res;
 }
 
 export async function spotifyGetPlaylist(playlistId = null) {

@@ -68,6 +68,8 @@ export default function App() {
     isSpotifyLive,
     isSideAEnded,
     setIsSideAEnded,
+    spotifyError,
+    setSpotifyError,
   } = useAudio();
 
   const handleOpenGift = () => {
@@ -145,6 +147,8 @@ export default function App() {
                 isShuffle={isShuffle}
                 onToggleShuffle={toggleShuffle}
                 onFlipSide={flipSide}
+                spotifyError={spotifyError}
+                onDismissSpotifyError={() => setSpotifyError(null)}
               />
             </motion.div>
 

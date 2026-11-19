@@ -63,6 +63,7 @@ export function useAudio() {
   const [isCrackleEnabled, setIsCrackleEnabled] = useState(false);
   const [isUsingProceduralFallback, setIsUsingProceduralFallback] = useState(false);
   const [isSpotifyLive, setIsSpotifyLive] = useState(false);
+  const [spotifyError, setSpotifyError] = useState(null);
 
   const audioRef = useRef(new Audio());
   const timerRef = useRef(null);
@@ -85,8 +86,8 @@ export function useAudio() {
     hasShownSideAEndedRef.current = true;
 
     if (isSpotifyAuthenticated()) {
-      spotifyPause().catch(() => {});
-      spotifySeek(0).catch(() => {});
+      spotifyPause().catch(() => { });
+      spotifySeek(0).catch(() => { });
     }
     if (audioRef.current) {
       audioRef.current.pause();
@@ -131,7 +132,7 @@ export function useAudio() {
           prev >= duration - 0.6
         ) {
           if (isSpotifyAuthenticated()) {
-            spotifyPause().catch(() => {});
+            spotifyPause().catch(() => { });
           }
           if (audioRef.current) {
             audioRef.current.pause();
@@ -313,7 +314,7 @@ export function useAudio() {
             // If Side B just ended on Wonderwall, pause so Spotify doesn't autoplay outside tracks:
             if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1) {
               if (isSpotifyAuthenticated()) {
-                spotifyPause().catch(() => {});
+                spotifyPause().catch(() => { });
               }
               setIsPlaying(false);
               return;
@@ -324,6 +325,9 @@ export function useAudio() {
           setIsSpotifyLive(true);
           setIsPlaying(Boolean(playback.is_playing));
           setDuration(trackDuration);
+          if (playback.is_playing) {
+            setSpotifyError(null);
+          }
 
           // Calibrate anchor smoothly without jumps
           const prevAnchor = spotifyAnchorRef.current;
@@ -443,7 +447,7 @@ export function useAudio() {
     const onAudioEnded = () => {
       if (isLoopingRef.current) {
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
         setCurrentTime(0);
       } else {
         handleTrackEnd();
@@ -501,6 +505,22 @@ export function useAudio() {
     }
   }, [effectiveVolume, isCrackleEnabled, isPlaying]);
 
+  const handlePlaybackResult = useCallback((res) => {
+    if (res?.error) {
+      if (res.reason === 'PREMIUM_REQUIRED' || res.status === 403) {
+        setSpotifyError('PREMIUM_REQUIRED');
+      } else if (res.reason === 'NO_DEVICE' || res.reason === 'NO_ACTIVE_DEVICE' || res.status === 404) {
+        setSpotifyError('NO_DEVICE');
+      } else {
+        setSpotifyError(res.message || 'Error al conectar con Spotify');
+      }
+      setIsPlaying(false);
+    } else {
+      setSpotifyError(null);
+      setIsPlaying(true);
+    }
+  }, []);
+
   const playAudio = useCallback((forceTrackUri = null) => {
     stopVinylCrackle();
     stopProceduralMusic();
@@ -516,21 +536,37 @@ export function useAudio() {
           const isCurrentTrackLoaded = pb?.item?.uri && pb.item.uri === targetUri;
           if (pb && isCurrentTrackLoaded && !pb.is_playing) {
             // Resume natively without restarting the playlist or resetting position
-            spotifyPlay().catch(() => {
-              spotifyStartGiftPlaylist(targetUri).catch(() => {});
-            });
+            spotifyPlay()
+              .then((res) => {
+                if (res?.error) {
+                  spotifyStartGiftPlaylist(targetUri).then(handlePlaybackResult);
+                } else {
+                  setSpotifyError(null);
+                  setIsPlaying(true);
+                }
+              })
+              .catch(() => {
+                spotifyStartGiftPlaylist(targetUri).then(handlePlaybackResult);
+              });
           } else {
             spotifyStartGiftPlaylist(targetUri)
-              .then(() => {
-                spotifySetShuffle(isShuffleRef.current).catch(() => {});
-                spotifySetRepeat(isLoopingRef.current ? 'track' : 'off').catch(() => {});
+              .then((res) => {
+                handlePlaybackResult(res);
+                if (!res?.error) {
+                  spotifySetShuffle(isShuffleRef.current).catch(() => {});
+                  spotifySetRepeat(isLoopingRef.current ? 'track' : 'off').catch(() => {});
+                }
               })
-              .catch((err) => console.log('Spotify start playlist notice:', err));
+              .catch((err) => {
+                console.log('Spotify start playlist notice:', err);
+                handlePlaybackResult({ error: true, status: 500, message: 'No se pudo conectar a Spotify' });
+              });
           }
         })
         .catch(() => {
-          spotifyStartGiftPlaylist(targetUri).catch(() => {});
+          spotifyStartGiftPlaylist(targetUri).then(handlePlaybackResult);
         });
+      return;
     }
 
     const audio = audioRef.current;
@@ -546,7 +582,7 @@ export function useAudio() {
     } else {
       setIsPlaying(true);
     }
-  }, [currentTrack, playlistSideA, playlistSideB]);
+  }, [currentTrack, playlistSideA, playlistSideB, handlePlaybackResult]);
 
   const pauseAudio = useCallback(() => {
     if (isSpotifyAuthenticated()) {
@@ -582,7 +618,7 @@ export function useAudio() {
     // Check if Side B finished (reached the end of Wonderwall without shuffle)
     if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1 && !isShuffleRef.current) {
       if (isSpotifyAuthenticated()) {
-        spotifyPause().catch(() => {});
+        spotifyPause().catch(() => { });
       }
       if (audioRef.current) {
         audioRef.current.pause();
@@ -693,9 +729,9 @@ export function useAudio() {
     if (isLooping) {
       if (audioRef.current && audioRef.current.src) {
         audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       } else if (isSpotifyAuthenticated()) {
-        spotifySeek(0).catch(() => {});
+        spotifySeek(0).catch(() => { });
       }
       setCurrentTime(0);
       spotifyAnchorRef.current = {
@@ -709,7 +745,7 @@ export function useAudio() {
       }
     } else if (activeSideRef.current === 'B' && currentTrackIndexRef.current === playlistSideB.length - 1) {
       if (isSpotifyAuthenticated()) {
-        spotifyPause().catch(() => {});
+        spotifyPause().catch(() => { });
       }
       if (audioRef.current) {
         audioRef.current.pause();
@@ -895,5 +931,7 @@ export function useAudio() {
     addCustomTrack,
     isSideAEnded,
     setIsSideAEnded,
+    spotifyError,
+    setSpotifyError,
   };
 }
