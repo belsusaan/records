@@ -256,11 +256,13 @@ export async function spotifyFetch(endpoint, method = 'GET', body = null) {
       } catch {
         // ignore
       }
+      console.warn('[Spotify Error 403/API]', res.status, endpoint, errData);
       return {
         error: true,
         status: res.status,
         reason:
           errData?.error?.reason ||
+          (errData?.error?.message?.includes('registered') ? 'USER_NOT_REGISTERED' : null) ||
           (res.status === 403 ? 'PREMIUM_REQUIRED' : res.status === 404 ? 'NO_ACTIVE_DEVICE' : null),
         message: errData?.error?.message || res.statusText,
       };
